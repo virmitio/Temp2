@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VM_SelfManager", "VM_SelfManager.csproj", "{748BA513-375C-4B0C-959D-D598C007B308}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoBuild", "AutoBuild.csproj", "{748BA513-375C-4B0C-959D-D598C007B308}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

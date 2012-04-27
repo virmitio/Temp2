@@ -19,13 +19,13 @@ using System.ComponentModel;
 using System.Configuration.Install;
 using System.ServiceProcess;
 
-namespace VM_SelfManager
+namespace AutoBuild
 {
     [RunInstaller(true)]
-    class VM_SelfManager_Installer : Installer
+    class AutoBuild_Installer : Installer
     {
 
-        public VM_SelfManager_Installer()
+        public AutoBuild_Installer()
         {
             ServiceProcessInstaller serviceProcessInstaller =
                                new ServiceProcessInstaller();
@@ -39,10 +39,10 @@ namespace VM_SelfManager
 
             //# Service Information
 
-            serviceInstaller.DisplayName = "Hyper-V Virtual Machine Self Management Service";
+            serviceInstaller.DisplayName = "CoApp AutoBuild Service";
             serviceInstaller.StartType = ServiceStartMode.Automatic;
 
-            serviceInstaller.ServiceName = "VM_SelfManager";
+            serviceInstaller.ServiceName = "AutoBuild";
 
             this.Installers.Add(serviceProcessInstaller);
             this.Installers.Add(serviceInstaller);

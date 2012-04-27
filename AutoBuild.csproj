@@ -8,8 +8,8 @@
     <ProjectGuid>{748BA513-375C-4B0C-959D-D598C007B308}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VM_SelfManager</RootNamespace>
-    <AssemblyName>VM_SelfManager</AssemblyName>
+    <RootNamespace>AutoBuild</RootNamespace>
+    <AssemblyName>AutoBuild</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -34,6 +34,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CoApp.Developer.Toolkit, Version=1.2.0.108, Culture=neutral, PublicKeyToken=1e373a58e25250cb, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\ProgramData\ReferenceAssemblies\any\CoApp.Developer.Toolkit.dll</HintPath>
+    </Reference>
+    <Reference Include="CoApp.Toolkit, Version=1.2.0.165, Culture=neutral, PublicKeyToken=1e373a58e25250cb, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\ProgramData\ReferenceAssemblies\any\CoApp.Toolkit.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=4.0.8.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
@@ -46,13 +58,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="VM_SelfManager.cs">
+    <Compile Include="AutoBuild.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AutoBuild_config.cs" />
+    <Compile Include="CommandScript.cs" />
+    <Compile Include="ListenAgent.cs" />
+    <Compile Include="ProjectData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VM_SelfManager_Installer.cs">
+    <Compile Include="AutoBuild_Installer.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="UtilityClasses.cs" />
+    <Compile Include="XmlObject.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Newtonsoft.Json.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
