@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO.Pipes;
 using System.IO;
+using CoApp.Toolkit.Collections;
 using Microsoft.Win32;
 
 namespace AutoBuild
@@ -32,7 +33,8 @@ namespace AutoBuild
     class AutoBuild : ServiceBase
     {
         private Thread MasterThread;
-        private AutoBuild_config MasterConfig;
+        public static AutoBuild_config MasterConfig;
+        public static EasyDictionary<string, ProjectData> Projects { get; private set; }
 
         public AutoBuild()
         {

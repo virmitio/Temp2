@@ -2,9 +2,11 @@
 using System.IO;
 using System.Xml.Serialization;
 using System.Collections.Generic;
+using CoApp.Toolkit.Collections;
 
 namespace AutoBuild
 {
+    [XmlRoot(ElementName = "AutoBuild_config", Namespace = "http://coapp.org/automation/build")]
     class AutoBuild_config
     {
         //XML Serialization methods
@@ -35,12 +37,11 @@ namespace AutoBuild
         }
 
         //Actual class data
-        public bool Enabled;
-        public bool KeepCleanRepo;
-        public string RepoURL;
-        public List<string> WatchRefs;
-        public List<CheckoutObject> BuildCheckouts;
-        public List<Command> Commands;
+        [XmlElement]
+        public string Name { get; private set; }
+        [XmlArray(IsNullable = false)]
+        public EasyDictionary<string,VersionControl> VCSList { get; private set; }
+
 
         //Default constructor.  Always good to have one of these.
         public AutoBuild_config()

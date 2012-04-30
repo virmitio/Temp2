@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
+using CoApp.Toolkit.Collections;
 
 namespace AutoBuild
 {
@@ -41,6 +42,47 @@ namespace AutoBuild
         {
             Switches = newSwitches;
         }
+    }
+
+    [XmlRoot(ElementName = "VersionControl", Namespace = "http://coapp.org/automation/build")]
+    public class VersionControl
+    {
+        [XmlAttribute]
+        public string Name { get; private set; }
+
+        [XmlElement]
+        public Tool Tool { get; private set; }
+
+        [XmlArray(IsNullable = false)]
+        public EasyDictionary<string, object> Properties { get; private set; }
+
+        public void SetTool(Tool tool)
+        {
+            this.Tool = tool;
+        }
+
+        public void SetProperty(string key, object value)
+        {
+            Properties[key] = value;
+        }
+
+        public bool RemoveProperty(string key)
+        {
+            return Properties.Remove(key);
+        }
+
+        public void Rename(string newName)
+        {
+            Name = newName;
+        }
+
+        public VersionControl(string name = null, Tool tool = null, IDictionary<string,object> properties = null)
+        {
+            Name = name;
+            this.Tool = tool;
+            Properties = new EasyDictionary<string, object>(properties);
+        }
+
     }
 
 

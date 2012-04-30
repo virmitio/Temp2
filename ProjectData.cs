@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace AutoBuild
 {
-    [XmlRoot(ElementName = "Project", Namespace = "http://coapp.org/automation/build")]
+    [XmlRoot(ElementName = "ProjectData", Namespace = "http://coapp.org/automation/build")]
     public class ProjectData : XmlObject
     {
         //XML Serialization methods

@@ -354,8 +354,7 @@ namespace AutoBuild
     {
         private ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
         public PostHandler()
-        {
-        }
+        {}
 
         public override Task Post(HttpListenerResponse response, string relativePath, UrlEncodedMessage message)
         {
@@ -371,41 +370,69 @@ namespace AutoBuild
             {
                 try
                 {
-                    var json = JObject.Parse(payload);
+                    dynamic json = JObject.Parse(payload);
                     Console.WriteLine("MSG Process begin {0}", json.commits.Count);
 
+                    var repository = (json.repository.name)??String.Empty;
+                    var reference = json["ref"].ToString();
+
                     var count = json.commits.Count;
-                    var doSiteRebuild = false;
+                    var validTrigger = false;
+
+
                     for (int i = 0; i < count; i++)
                     {
                         var username = json.commits[i].author.username.Value;
-                        var commitMessage = json.commits[i].message.Value;
-                        var repository = json["repository"]["name"].ToString();
-                        var myref = json["ref"].ToString();
 
-                        var url = (string)json.commits[i].url.Value;
-                        if (repository == "coapp.org")
+                        if (username != AutoBuild.MasterConfig.VCSList["git"].Properties["username"])
                         {
-                            doSiteRebuild = true;
+                            validTrigger = true;
                         }
-
-                        Bitly.Shorten(url).ContinueWith((bitlyAntecedent) =>
-                        {
-                            var commitUrl = bitlyAntecedent.Result;
-
-                            var handle = _aliases.ContainsKey(username) ? _aliases[username] : username;
-                            var sz = repository.Length + handle.Length + commitUrl.Length + commitMessage.Length + 10;
-                            var n = 140 - sz;
-
-                            if (n < 0)
-                            {
-                                commitMessage = commitMessage.Substring(0, (commitMessage.Length + n) - 3) + "...";
-                            }
-                            _tweeter.Tweet("{0} => {1} via {2} {3}", repository, commitMessage, handle, commitUrl);
-                            Console.WriteLine("{0} => {1} via {2} {3}", repository, commitMessage, handle, commitUrl);
-                        });
-
                     }
+
+                    if (validTrigger)
+                    {
+                        if (AutoBuild.Projects.ContainsKey(repository))
+                        {
+                            ProjectData project = AutoBuild.Projects[repository];
+                            if (project.WatchRefs.IsNullOrEmpty() || project.WatchRefs.Contains(reference))
+                                AutoBuild.Trigger(repository);
+                        }
+                        else
+                        {
+                            if ((bool)(AutoBuild.MasterConfig.VCSList["git"].Properties["NewFromHook"]))
+                            {
+                                /////Build new ProjectInfo info from commit message.
+                                ProjectData project = new ProjectData();
+
+                                // Set url and protocol data
+                                string init_url = json.url;
+                                string proto = init_url.Substring(0, init_url.IndexOf("://") + 3);
+                                init_url = init_url.Substring(proto.Length - 1);
+                                string host = init_url.Substring(0, init_url.IndexOf("/"));
+                                string repo = init_url.Substring(init_url.IndexOf("/" + 1));
+                                switch ((string)(AutoBuild.MasterConfig.VCSList["git"].Properties["url_style"]))
+                                {
+                                    case "git":
+                                        project.RepoURL = "git://"+host+"/"+repo;
+                                        break;
+                                    case "http":
+                                        project.RepoURL = json.url;
+                                        break;
+                                    case "ssh":
+                                        project.RepoURL = "git@"+host+":"+repo;
+                                        break;
+                                    default:
+                                        project.RepoURL = null;
+                                }
+                                
+                                //Build new project with the new ProjectInfo
+                                AutoBuild.AddProject(repository, project);
+
+                            }
+                        }
+                    }
+
                     // just rebuild the site once for a given batch of rebuild commit messages.
                     if (doSiteRebuild)
                     {
