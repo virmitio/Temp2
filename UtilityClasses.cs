@@ -14,10 +14,10 @@ namespace AutoBuild
         public string Name { get; private set; }
         [XmlElement]
         public string Path { get; private set; }
-        [XmlElement]
-        public string Switches { get; private set; }
+        [XmlArray(IsNullable = false)]
+        public string[] Switches { get; private set; }
 
-        public Tool(string name, string path, string switches)
+        public Tool(string name, string path, string[] switches)
         {
             Name = name;
             Path = System.IO.File.Exists(path)?path:
@@ -38,7 +38,7 @@ namespace AutoBuild
             return System.IO.File.Exists(newPath) || System.IO.File.Exists(System.IO.Path.GetFullPath(newPath));
         }
 
-        public void SetSwitches(string newSwitches)
+        public void SetSwitches(string[] newSwitches)
         {
             Switches = newSwitches;
         }
@@ -71,13 +71,10 @@ namespace AutoBuild
             return Properties.Remove(key);
         }
 
-        public void Rename(string newName)
+        public VersionControl(string name, Tool tool = null, IDictionary<string,object> properties = null)
         {
-            Name = newName;
-        }
-
-        public VersionControl(string name = null, Tool tool = null, IDictionary<string,object> properties = null)
-        {
+            if (name == null)
+                throw new ArgumentNullException("name", "VersionControl.Name cannot be null.");
             Name = name;
             this.Tool = tool;
             Properties = new EasyDictionary<string, object>(properties);
@@ -85,5 +82,10 @@ namespace AutoBuild
 
     }
 
+    [XmlRoot(ElementName = "BuildTrigger", Namespace = "http://coapp.org/automation/build")]
+    public class BuildTrigger
+    {
+
+    }
 
 }

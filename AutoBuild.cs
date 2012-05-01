@@ -16,7 +16,7 @@
   */
 
 using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
@@ -155,5 +155,31 @@ namespace AutoBuild
             EventLog.WriteEntry(Message, EventType, ID, Category);
         }
 
+        public static void AddProject(string projectName, ProjectData project)
+        {
+            if (Projects.ContainsKey(projectName))
+                throw new ArgumentException("A project with this name already exists: " + projectName);
+            Projects.Add(projectName, project);
+            InitProject(projectName);
+        }
+
+        public static void InitProject(string projectName)
+        {
+            if (projectName == null)
+            {
+                throw new ArgumentException("ProjectName cannot be null.");
+            }
+            foreach (ProjectData proj in Projects["projectName"])
+            {
+                
+            }
+            throw new NotImplementedException();
+        }
+
+        public static void Trigger(string projectName)
+        {
+
+            throw new NotImplementedException();
+        }
     }
 }

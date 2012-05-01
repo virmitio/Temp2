@@ -382,9 +382,9 @@ namespace AutoBuild
 
                     for (int i = 0; i < count; i++)
                     {
-                        var username = json.commits[i].author.username.Value;
+                        string username = json.commits[i].author.username.Value;
 
-                        if (username != AutoBuild.MasterConfig.VCSList["git"].Properties["username"])
+                        if (username.Equals((string)(AutoBuild.MasterConfig.VCSList["git"].Properties["username"]),StringComparison.CurrentCultureIgnoreCase))
                         {
                             validTrigger = true;
                         }
@@ -405,13 +405,16 @@ namespace AutoBuild
                                 /////Build new ProjectInfo info from commit message.
                                 ProjectData project = new ProjectData();
 
-                                // Set url and protocol data
+                                project.Enabled = true;
+                                project.KeepCleanRepo = AutoBuild.MasterConfig.DefaultCleanRepo;
+                                
+                                // This section constructs the repo url to use...
                                 string init_url = json.url;
                                 string proto = init_url.Substring(0, init_url.IndexOf("://") + 3);
                                 init_url = init_url.Substring(proto.Length - 1);
                                 string host = init_url.Substring(0, init_url.IndexOf("/"));
                                 string repo = init_url.Substring(init_url.IndexOf("/" + 1));
-                                switch ((string)(AutoBuild.MasterConfig.VCSList["git"].Properties["url_style"]))
+                                switch (((string)(AutoBuild.MasterConfig.VCSList["git"].Properties["url_style"])).ToLower())
                                 {
                                     case "git":
                                         project.RepoURL = "git://"+host+"/"+repo;
@@ -424,11 +427,21 @@ namespace AutoBuild
                                         break;
                                     default:
                                         project.RepoURL = null;
+                                        break;
                                 }
+                                // End repo url section
+
+                                if (!(AutoBuild.MasterConfig.DefaultCommands.IsNullOrEmpty()))
+                                    project.Commands.Add(new CommandScript("Default",AutoBuild.MasterConfig.DefaultCommands));
                                 
-                                //Build new project with the new ProjectInfo
+                                //We're obviously adding a git repo for this project, so assign that for the project's version control
+                                project.VersionControl = "git";
+
+                                //Add the new project with the new ProjectInfo
                                 AutoBuild.AddProject(repository, project);
 
+                                //Trigger the project now that it has been added
+                                AutoBuild.Trigger(repository);
                             }
                         }
                     }

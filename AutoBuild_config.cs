@@ -38,9 +38,16 @@ namespace AutoBuild
 
         //Actual class data
         [XmlElement]
+        public bool DefaultCleanRepo { get; private set; }
+
+        [XmlElement]
         public string Name { get; private set; }
+
         [XmlArray(IsNullable = false)]
         public EasyDictionary<string,VersionControl> VCSList { get; private set; }
+
+        [XmlArray(IsNullable = false)]
+        public List<string> DefaultCommands { get; private set; }
 
 
         //Default constructor.  Always good to have one of these.

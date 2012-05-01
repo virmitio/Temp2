@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Xml.Serialization;
 using System.Collections.Generic;
@@ -53,35 +54,96 @@ namespace AutoBuild
                 ArchiveCmd = String.Empty;
             }
         }
-        
+
         //Actual class data
-        [XmlAttribute]
-        public bool Enabled;
+        private bool Changed;
 
-        [XmlAttribute]
-        public bool KeepCleanRepo;
+        [XmlElement]
+        public bool Enabled
+        {
+            get { return Enabled; }
+            set { 
+                Changed = true;
+                Enabled = value;
+            }
+        }
+
+        [XmlElement]
+        public bool KeepCleanRepo
+        {
+            get { return KeepCleanRepo; }
+            set
+            {
+                Changed = true;
+                KeepCleanRepo = value;
+            }
+        }
+
+        [XmlElement]
+        public string RepoURL
+        {
+            get { return RepoURL; }
+            set
+            {
+                Changed = true;
+                RepoURL = value;
+            }
+        }
+
+        [XmlElement] 
+        public string VersionControl
+        {
+            get { return VersionControl; }
+            set
+            {
+                Changed = true;
+                VersionControl = value;
+            }
+        }
+
+        [XmlArray(IsNullable = false)] 
+        public ObservableCollection<string> WatchRefs;
+
+        [XmlArray(IsNullable = false)]
+        public ObservableCollection<CheckoutInfo> BuildCheckouts;
+
+        [XmlArray(IsNullable = false)]
+        public ObservableCollection<CommandScript> Commands;
+
+        [XmlArray(IsNullable = false)]
+        public ObservableCollection<BuildTrigger> BuildTriggers;
+
+
+        void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            Changed = true;
+        }
+
+        public bool HasChanged()
+        {
+            return Changed;
+        }
+
+        public bool ResetChanged()
+        {
+            bool tmp = Changed;
+            Changed = false;
+            return tmp;
+        }
+
         
-        [XmlAttribute]
-        public string RepoURL;
-
-        [XmlArray(IsNullable = false)]
-        public List<string> WatchRefs;
-
-        [XmlArray(IsNullable = false)]
-        public List<CheckoutInfo> BuildCheckouts;
-
-        [XmlArray(IsNullable = false)]
-        public List<CommandScript> Commands;
-
         //Default constructor.  Always good to have one of these.
         public ProjectData()
         {
             Enabled = false;
             KeepCleanRepo = true;
             RepoURL = String.Empty;
-            WatchRefs = new List<string>();
-            BuildCheckouts = new List<CheckoutInfo>();
-            Commands = new List<CommandScript>();
+            WatchRefs = new ObservableCollection<string>();
+            BuildCheckouts = new ObservableCollection<CheckoutInfo>();
+            Commands = new ObservableCollection<CommandScript>();
+            WatchRefs.CollectionChanged += CollectionChanged;
+            BuildCheckouts.CollectionChanged += CollectionChanged;
+            Commands.CollectionChanged += CollectionChanged;
         }
 
         //A copy constructor, because I'm always annoyed when I can't find one.
@@ -93,11 +155,18 @@ namespace AutoBuild
             WatchRefs = source.WatchRefs;
             BuildCheckouts = source.BuildCheckouts;
             Commands = source.Commands;
+            WatchRefs.CollectionChanged += CollectionChanged;
+            BuildCheckouts.CollectionChanged += CollectionChanged;
+            Commands.CollectionChanged += CollectionChanged;
         }
 
         //And a stream constructor in case I ever feel I need it.
         public ProjectData(Stream XMLinput) : this(FromXML(XMLinput))
-        {}
+        {
+            WatchRefs.CollectionChanged += CollectionChanged;
+            BuildCheckouts.CollectionChanged += CollectionChanged;
+            Commands.CollectionChanged += CollectionChanged;
+        }
 
     }
 }
