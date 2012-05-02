@@ -113,6 +113,14 @@ namespace AutoBuild
         [XmlArray(IsNullable = false)]
         public ObservableCollection<BuildTrigger> BuildTriggers;
 
+        [XmlArray(IsNullable = false)]
+        public ObservableCollection<string> PreBuild;
+
+        [XmlArray(IsNullable = false)]
+        public ObservableCollection<string> Build;
+
+        [XmlArray(IsNullable = false)]
+        public ObservableCollection<string> PostBuild;
 
         void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
@@ -139,11 +147,17 @@ namespace AutoBuild
             KeepCleanRepo = true;
             RepoURL = String.Empty;
             WatchRefs = new ObservableCollection<string>();
-            BuildCheckouts = new ObservableCollection<CheckoutInfo>();
-            Commands = new ObservableCollection<CommandScript>();
             WatchRefs.CollectionChanged += CollectionChanged;
+            BuildCheckouts = new ObservableCollection<CheckoutInfo>();
             BuildCheckouts.CollectionChanged += CollectionChanged;
+            Commands = new ObservableCollection<CommandScript>();
             Commands.CollectionChanged += CollectionChanged;
+            Build = new ObservableCollection<string>();
+            Build.CollectionChanged += CollectionChanged;
+            PreBuild = new ObservableCollection<string>();
+            PreBuild.CollectionChanged += CollectionChanged;
+            PostBuild = new ObservableCollection<string>();
+            PostBuild.CollectionChanged += CollectionChanged;
         }
 
         //A copy constructor, because I'm always annoyed when I can't find one.
@@ -155,9 +169,15 @@ namespace AutoBuild
             WatchRefs = source.WatchRefs;
             BuildCheckouts = source.BuildCheckouts;
             Commands = source.Commands;
+            Build = source.Build;
+            PreBuild = source.PreBuild;
+            PostBuild = source.PostBuild;
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts.CollectionChanged += CollectionChanged;
             Commands.CollectionChanged += CollectionChanged;
+            Build.CollectionChanged += CollectionChanged;
+            PreBuild.CollectionChanged += CollectionChanged;
+            PostBuild.CollectionChanged += CollectionChanged;
         }
 
         //And a stream constructor in case I ever feel I need it.
@@ -166,6 +186,9 @@ namespace AutoBuild
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts.CollectionChanged += CollectionChanged;
             Commands.CollectionChanged += CollectionChanged;
+            Build.CollectionChanged += CollectionChanged;
+            PreBuild.CollectionChanged += CollectionChanged;
+            PostBuild.CollectionChanged += CollectionChanged;
         }
 
     }

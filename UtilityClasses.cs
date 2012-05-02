@@ -83,9 +83,12 @@ namespace AutoBuild
     }
 
     [XmlRoot(ElementName = "BuildTrigger", Namespace = "http://coapp.org/automation/build")]
-    public class BuildTrigger
+    public abstract class BuildTrigger
     {
+        [XmlAttribute]
+        public string Type { get; protected set; }
 
+        public abstract void Init();
     }
 
 }

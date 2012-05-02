@@ -41,7 +41,7 @@ namespace AutoBuild
         public bool DefaultCleanRepo { get; private set; }
 
         [XmlElement]
-        public string Name { get; private set; }
+        public string ProjectRoot { get; private set; }
 
         [XmlArray(IsNullable = false)]
         public EasyDictionary<string,VersionControl> VCSList { get; private set; }

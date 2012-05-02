@@ -17,15 +17,18 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
 using System.Management;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO.Pipes;
 using System.IO;
 using CoApp.Toolkit.Collections;
+using CoApp.Toolkit.Utility;
 using Microsoft.Win32;
 
 namespace AutoBuild
@@ -166,20 +169,68 @@ namespace AutoBuild
         public static void InitProject(string projectName)
         {
             if (projectName == null)
-            {
                 throw new ArgumentException("ProjectName cannot be null.");
-            }
-            foreach (ProjectData proj in Projects["projectName"])
-            {
-                
-            }
-            throw new NotImplementedException();
+            if (!Projects.ContainsKey(projectName))
+                throw new ArgumentException("Project not found: " + projectName);
+            foreach (var trigger in Projects[projectName].BuildTriggers)
+                trigger.Init();
         }
 
         public static void Trigger(string projectName)
         {
+            if (PreBuildActions(projectName) == 0)
+                if (Build(projectName) == 0)
+                    if (PostBuildActions(projectName) == 0)
+                        Record("Success", projectName);
+                    else
+                        Record("Warning", projectName);
+                else
+                    Record("Failed", projectName);
+            else
+                Record("Error", projectName);
+
+        }
+
+        private static void Record(string status, string projectName)
+        {
 
             throw new NotImplementedException();
+        }
+
+        public static int PreBuildActions(string projectName)
+        {
+        }
+
+        public static int PostBuildActions(string projectName)
+        {
+        }
+
+        public static int Build(string projectName)
+        {
+            if (projectName == null)
+                throw new ArgumentException("ProjectName cannot be null.");
+            if (!Projects.ContainsKey(projectName))
+                throw new ArgumentException("Project not found: "+projectName);
+
+            ProjectData proj = Projects[projectName];
+            ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
+            foreach (string command in proj.Build)
+            {
+                if (proj.Commands)
+                {
+                    
+                }
+            }
+
+            foreach (CommandScript script in Projects[projectName].Commands)
+            {
+                // Locate the working directory.
+                string path = MasterConfig.ProjectRoot + @"\" + projectName;
+                int scriptReturn = script.Run(_cmdexe, path);
+                if (scriptReturn != 0)
+                    return scriptReturn;
+            }
+            return 0;
         }
     }
 }
