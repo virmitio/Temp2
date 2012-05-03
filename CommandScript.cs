@@ -58,5 +58,49 @@ namespace AutoBuild
             return exe.Exec(@"/c """ + tmpFile + @"""");
         }
 
+        public string Flatten()
+        {
+            StringBuilder Out = new StringBuilder();
+            foreach (string s in Commands)
+            {
+                Out.AppendLine(s);
+            }
+            return Out.ToString();
+        }
+
+        /// <summary>
+        /// This only compares against the name of the CommandScript.  For a command-level comparison, use Compare(object).
+        /// </summary>
+        /// <param name="obj"></param>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is CommandScript || obj is string))
+                return false;
+            string tmp;
+            if (obj is CommandScript)
+                tmp = ((CommandScript) obj).Name;
+            else
+                tmp = (string) obj;
+            return Name.Equals(tmp, StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        public bool Compare(object obj)
+        {
+            if (!(obj is CommandScript || obj is string || obj is List<string>))
+                return false;
+            string tmp;
+            if (obj is CommandScript)
+                tmp = ((CommandScript)obj).Flatten();
+            else if (obj is List<string>)
+            {
+                StringBuilder SB = new StringBuilder();
+                foreach (string s in (List<string>)obj)
+                    SB.AppendLine(s);
+                tmp = SB.ToString();
+            }
+            else
+                tmp = (string)obj;
+            return tmp.Equals(Flatten(),StringComparison.CurrentCultureIgnoreCase);
+        }
     }
 }

@@ -91,4 +91,76 @@ namespace AutoBuild
         public abstract void Init();
     }
 
+    [XmlRoot(ElementName = "BuildStatus", Namespace = "http://coapp.org/automation/build")]
+    public class BuildStatus
+    {
+        private bool Locked = true;
+
+        [XmlElement]
+        public string Result { get; private set; }
+
+        [XmlElement]
+        public DateTime TimeStamp { get; private set; }
+
+        [XmlElement]
+        public string LogData { get; private set; }
+
+        /// <summary>
+        /// This will set the result for this BuildStatus iff the status is not locked and Result is currently set to null.
+        /// </summary>
+        /// <param name="NewResult"></param>
+        /// <returns>True if the Result has changed.  False otherwise.</returns>
+        public bool SetResult(string NewResult)
+        {
+            if (Locked)
+                return false;
+            if (Result == null)
+            {
+                Result = NewResult;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Changes the current rusult unless this BuildStatus is locked.
+        /// </summary>
+        /// <param name="NewResult"></param>
+        /// <returns></returns>
+        public string ChangeResult(string NewResult)
+        {
+            if (Locked)
+                return null;
+            string prev = Result;
+            Result = NewResult;
+            return prev;
+        }
+
+        public void Lock()
+        {
+            Locked = true;
+        }
+        
+        public void Append(string data)
+        {
+            LogData += Environment.NewLine + data;
+        }
+
+        public BuildStatus()
+        {
+            Locked = false;
+            TimeStamp = DateTime.UtcNow;
+        }
+    }
+
+    [XmlRoot(ElementName = "BuildHistory", Namespace = "http://coapp.org/automation/build")]
+    public class BuildHistory
+    {
+        [XmlArray(IsNullable = false)]
+        public List<BuildStatus> Builds { get; protected set; }
+
+    }
+
+
+
 }

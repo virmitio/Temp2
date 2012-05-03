@@ -57,6 +57,7 @@ namespace AutoBuild
 
         //Actual class data
         private bool Changed;
+        private BuildHistory History;
 
         [XmlElement]
         public bool Enabled
@@ -138,6 +139,8 @@ namespace AutoBuild
             Changed = false;
             return tmp;
         }
+
+
 
         
         //Default constructor.  Always good to have one of these.

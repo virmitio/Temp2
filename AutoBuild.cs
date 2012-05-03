@@ -33,6 +33,14 @@ using Microsoft.Win32;
 
 namespace AutoBuild
 {
+    internal enum Errors
+    {
+        NoError = 0,
+        NoCommand = -10,
+
+    }
+
+
     class AutoBuild : ServiceBase
     {
         private Thread MasterThread;
@@ -191,12 +199,6 @@ namespace AutoBuild
 
         }
 
-        private static void Record(string status, string projectName)
-        {
-
-            throw new NotImplementedException();
-        }
-
         public static int PreBuildActions(string projectName)
         {
         }
@@ -216,9 +218,18 @@ namespace AutoBuild
             ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
             foreach (string command in proj.Build)
             {
-                if (proj.Commands)
+                CommandScript tmp = new CommandScript(command);
+                if (proj.Commands.Contains(tmp))
+                {
+                }else if (MasterConfig.Commands.Contains(tmp))
                 {
                     
+                }
+                else
+                {
+                    // Can't locate the specified command.  Bail with error.
+                    WriteLog(projectName, "Unable to locate command script: " + command);
+                    return (int)Errors.NoCommand;
                 }
             }
 
