@@ -49,6 +49,18 @@ namespace AutoBuild
         [XmlArray(IsNullable = false)]
         public List<string> DefaultCommands { get; private set; }
 
+        [XmlArray(IsNullable = false)]
+        public ObservableCollection<CommandScript> Commands;
+
+
+
+
+
+
+
+
+
+
 
         //Default constructor.  Always good to have one of these.
         public AutoBuild_config()

@@ -1,18 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
-using CoApp.Toolkit.Utility;
 
 namespace AutoBuild
 {
     [XmlRoot(ElementName = "CommandScript", Namespace = "http://coapp.org/automation/build")]
     public class CommandScript : XmlObject
     {
-        [XmlAttribute]
-        public string Name;
+//        [XmlAttribute]
+//        public string Name;
         [XmlArray(IsNullable = false)]
         public List<string> Commands;
 

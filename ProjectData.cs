@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Security.AccessControl;
 using System.Xml.Serialization;
 using System.Collections.Generic;
 
@@ -140,8 +141,25 @@ namespace AutoBuild
             return tmp;
         }
 
+        public BuildHistory GetHistory()
+        {
+            return History;
+        }
 
-
+        /// <summary>
+        /// Will attempt to load the build history from a file.
+        /// If the file cannot be found, the string will be assumed to contain Xml data and an attempt will be made to parse it for history data.
+        /// </summary>
+        /// <param name="XmlFile"></param>
+        /// <returns>True if the History object has changed.</returns>
+        public bool LoadHistory(string XmlFile)
+        {
+            if (File.Exists(XmlFile))
+                return History.ImportHistory(new FileStream(XmlFile, FileMode.Open, FileAccess.Read));
+            
+            //This means we don't see a file by that name.  Maybe it's just an Xml string?
+            return History.ImportHistory(XmlFile);
+        }
         
         //Default constructor.  Always good to have one of these.
         public ProjectData()

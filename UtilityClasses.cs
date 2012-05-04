@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
 using CoApp.Toolkit.Collections;
+
 
 namespace AutoBuild
 {
@@ -159,6 +161,85 @@ namespace AutoBuild
         [XmlArray(IsNullable = false)]
         public List<BuildStatus> Builds { get; protected set; }
 
+        /// <summary>
+        /// This will populate the Builds list from an XML input stream.
+        /// NOTE: This will only make changes to Builds if Builds is empty or null.
+        /// </summary>
+        /// <param name="XmlStream">Stream containing XML data</param>
+        /// <returns>True if Builds was altered.</returns>
+        public bool ImportHistory(Stream XmlStream)
+        {
+            if (!(Builds == null || Builds.Count <= 0))
+                return false;
+            try
+            {
+                XmlSerializer S = new XmlSerializer(typeof (BuildHistory));
+                StreamReader SR = new StreamReader(XmlStream);
+                Builds = ((BuildHistory) S.Deserialize(SR)).Builds;
+                Builds.Sort((A, B) => (A.TimeStamp.CompareTo(B.TimeStamp)));
+                return true;
+            }
+            catch(Exception e)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// This will populate the Builds list from an XML input stream.
+        /// NOTE: This will only make changes to Builds if Builds is empty or null.
+        /// </summary>
+        /// <param name="XmlStream">Stream containing XML data</param>
+        /// <returns>True if Builds was altered.</returns>
+        public bool ImportHistory(string XmlString)
+        {
+            if (!(Builds == null || Builds.Count <= 0))
+                return false;
+            try
+            {
+                XmlSerializer S = new XmlSerializer(typeof(BuildHistory));
+                StringReader SR = new StringReader(XmlString);
+                Builds = ((BuildHistory)S.Deserialize(SR)).Builds;
+                Builds.Sort((A, B) => (A.TimeStamp.CompareTo(B.TimeStamp)));
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        public string ExportXml()
+        {
+            XmlSerializer S = new XmlSerializer(typeof(BuildHistory));
+            StringWriter TW = new StringWriter();
+            S.Serialize(TW, this);
+            return TW.ToString();
+        }
+
+        /// <summary>
+        /// This will add a BuildStatus to the history.
+        /// NOTE:  This will also lock the BuildStatus against further changes!
+        /// </summary>
+        /// <param name="status"></param>
+        public void Append(BuildStatus status)
+        {
+            status.Lock();
+            Builds.Add(status);
+        }
+
+        public BuildHistory()
+        {
+            Builds = new List<BuildStatus>();
+        }
+        public BuildHistory(string Xml)
+        {
+            ImportHistory(Xml);
+        }
+        public BuildHistory(Stream Xml)
+        {
+            ImportHistory(Xml);
+        }
     }
 
 

@@ -64,6 +64,7 @@
     <Compile Include="AutoBuild_config.cs" />
     <Compile Include="CommandScript.cs" />
     <Compile Include="ListenAgent.cs" />
+    <Compile Include="ProcessUtility.cs" />
     <Compile Include="ProjectData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AutoBuild_Installer.cs">

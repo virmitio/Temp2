@@ -28,7 +28,6 @@ using System.Threading.Tasks;
 using System.IO.Pipes;
 using System.IO;
 using CoApp.Toolkit.Collections;
-using CoApp.Toolkit.Utility;
 using Microsoft.Win32;
 
 namespace AutoBuild
@@ -199,48 +198,55 @@ namespace AutoBuild
 
         }
 
-        public static int PreBuildActions(string projectName)
+        public static int PreBuildActions(string projectName, BuildStatus status = null)
         {
         }
 
-        public static int PostBuildActions(string projectName)
+        public static int PostBuildActions(string projectName, BuildStatus status = null)
         {
         }
 
-        public static int Build(string projectName)
+        public static int Build(string projectName, BuildStatus status = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: "+projectName);
 
+            status = status ?? new BuildStatus();
             ProjectData proj = Projects[projectName];
             ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
+            // Redirect stdout and stderr to the same output
+            StringBuilder std = new StringBuilder();
+            _cmdexe.ResetStdOut(std);
+            _cmdexe.ResetStdErr(std);
+            
             foreach (string command in proj.Build)
             {
+                status.Append("AutoBuild - Begin command:  " + command);
+
                 CommandScript tmp = new CommandScript(command);
-                if (proj.Commands.Contains(tmp))
+                if (proj.Commands.ContainsKey(tmp))
                 {
-                }else if (MasterConfig.Commands.Contains(tmp))
+                    tmp = proj.Commands[tmp];
+                }
+                else if (MasterConfig.Commands.ContainsKey(tmp))
                 {
-                    
+                    tmp = MasterConfig.Commands[tmp];
                 }
                 else
                 {
                     // Can't locate the specified command.  Bail with error.
-                    WriteLog(projectName, "Unable to locate command script: " + command);
+                    status.Append("AutoBuild Error:  Unable to locate command script: " + command);
                     return (int)Errors.NoCommand;
                 }
+
+                int retVal = tmp.Run(_cmdexe, MasterConfig.ProjectRoot + @"\" + projectName);
+                status.Append(_cmdexe.StandardOut);
+                if (retVal != 0)
+                    return retVal;
             }
 
-            foreach (CommandScript script in Projects[projectName].Commands)
-            {
-                // Locate the working directory.
-                string path = MasterConfig.ProjectRoot + @"\" + projectName;
-                int scriptReturn = script.Run(_cmdexe, path);
-                if (scriptReturn != 0)
-                    return scriptReturn;
-            }
             return 0;
         }
     }
