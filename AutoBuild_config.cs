@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Xml.Serialization;
 using System.Collections.Generic;
@@ -37,25 +38,65 @@ namespace AutoBuild
         }
 
         //Actual class data
-        [XmlElement]
-        public bool DefaultCleanRepo { get; private set; }
+        private bool Changed;
 
         [XmlElement]
-        public string ProjectRoot { get; private set; }
+        public bool DefaultCleanRepo
+        {
+            get { return _DefaultCleanRepo; }
+            set
+            {
+                Changed = true;
+                _DefaultCleanRepo = value;
+            }
+        }
+        private bool _DefaultCleanRepo;
+
+        [XmlElement]
+        public string ProjectRoot
+        {
+            get { return _ProjectRoot; }
+            set
+            {
+                Changed = true;
+                _ProjectRoot = value;
+            }
+        }
+        private string _ProjectRoot;
+
+        [XmlElement]
+        public int MaxJobs
+        {
+            get { return _MaxJobs; }
+            set
+            {
+                Changed = true;
+                _MaxJobs = value;
+            }
+        }
+        private int _MaxJobs;
+        
+        [XmlArray(IsNullable = false)]
+        public XDictionary<string, VersionControl> VCSList { get; internal set; }
 
         [XmlArray(IsNullable = false)]
-        public EasyDictionary<string,VersionControl> VCSList { get; private set; }
+        public ObservableCollection<string> DefaultCommands { get; internal set; }
 
         [XmlArray(IsNullable = false)]
-        public List<string> DefaultCommands { get; private set; }
-
-        [XmlArray(IsNullable = false)]
-        public ObservableCollection<CommandScript> Commands;
+        public XDictionary<string, CommandScript> Commands { get; internal set; }
 
 
 
 
 
+        void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            Changed = true;
+        }
+        void DictionaryChanged(IDictionary<string, CommandScript> dict)
+        {
+            Changed = true;
+        }
 
 
 
@@ -65,6 +106,10 @@ namespace AutoBuild
         //Default constructor.  Always good to have one of these.
         public AutoBuild_config()
         {
+            Changed = false;
+
+
+
             Enabled = false;
             KeepCleanRepo = true;
             RepoURL = String.Empty;

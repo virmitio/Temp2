@@ -352,7 +352,6 @@ namespace AutoBuild
 
     public class PostHandler : RequestHandler
     {
-        private ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
         public PostHandler()
         {}
 
@@ -446,34 +445,10 @@ namespace AutoBuild
                         }
                     }
 
-                    // just rebuild the site once for a given batch of rebuild commit messages.
-                    if (doSiteRebuild)
-                    {
-                        Task.Factory.StartNew(() =>
-                        {
-                            try
-                            {
-                                Console.WriteLine("Rebuilding website.");
-                                Environment.CurrentDirectory = Environment.GetEnvironmentVariable("STORAGE");
-                                if (_cmdexe.Exec(@"/c rebuild_site.cmd") != 0)
-                                {
-                                    Console.WriteLine("Site rebuild result:\r\n{0}", _cmdexe.StandardOut);
-                                    return;
-                                }
-
-                                Console.WriteLine("Rebuilt Website.");
-                            }
-                            catch (Exception e)
-                            {
-                                Listener.HandleException(e);
-                            }
-
-                        });
-                    }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Error handling uploaded package: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                    Console.WriteLine("Error processing payload: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
                     Listener.HandleException(e);
                     response.StatusCode = 500;
                     response.Close();
@@ -495,8 +470,6 @@ namespace AutoBuild
             return result;
         }
     }
-
-
 
     class ListenAgent
     {
@@ -524,7 +497,7 @@ namespace AutoBuild
                 }
 
 
-                listener.AddHandler(commitMessage, new CommitMessageHandler(tweetCommits, aliases));
+                listener.AddHandler(commitMessage, new PostHandler());
 
                 listener.Start();
 

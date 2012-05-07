@@ -4,6 +4,7 @@ using System.IO;
 using System.Security.AccessControl;
 using System.Xml.Serialization;
 using System.Collections.Generic;
+using CoApp.Toolkit.Collections;
 
 namespace AutoBuild
 {
@@ -63,45 +64,62 @@ namespace AutoBuild
         [XmlElement]
         public bool Enabled
         {
-            get { return Enabled; }
+            get { return _Enabled; }
             set { 
                 Changed = true;
-                Enabled = value;
+                _Enabled = value;
             }
         }
+        private bool _Enabled;
 
         [XmlElement]
         public bool KeepCleanRepo
         {
-            get { return KeepCleanRepo; }
+            get { return _KeepCleanRepo; }
             set
             {
                 Changed = true;
-                KeepCleanRepo = value;
+                _KeepCleanRepo = value;
             }
         }
+        private bool _KeepCleanRepo;
+
+        [XmlElement]
+        public bool AllowConcurrentBuilds
+        {
+            get { return _AllowConcurrentBuilds; }
+            set
+            {
+                Changed = true;
+                _AllowConcurrentBuilds = value;
+            }
+        }
+        private bool _AllowConcurrentBuilds;
+
 
         [XmlElement]
         public string RepoURL
         {
-            get { return RepoURL; }
+            get { return _RepoURL; }
             set
             {
                 Changed = true;
-                RepoURL = value;
+                _RepoURL = value;
             }
         }
+        private string _RepoURL;
 
         [XmlElement] 
         public string VersionControl
         {
-            get { return VersionControl; }
+            get { return _VersionControl; }
             set
             {
                 Changed = true;
-                VersionControl = value;
+                _VersionControl = value;
             }
         }
+        private string _VersionControl;
 
         [XmlArray(IsNullable = false)] 
         public ObservableCollection<string> WatchRefs;
@@ -110,7 +128,7 @@ namespace AutoBuild
         public ObservableCollection<CheckoutInfo> BuildCheckouts;
 
         [XmlArray(IsNullable = false)]
-        public ObservableCollection<CommandScript> Commands;
+        public XDictionary<string, CommandScript> Commands;
 
         [XmlArray(IsNullable = false)]
         public ObservableCollection<BuildTrigger> BuildTriggers;
@@ -125,6 +143,10 @@ namespace AutoBuild
         public ObservableCollection<string> PostBuild;
 
         void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            Changed = true;
+        }
+        void DictionaryChanged(IDictionary<string, CommandScript> dict)
         {
             Changed = true;
         }
@@ -171,8 +193,8 @@ namespace AutoBuild
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts = new ObservableCollection<CheckoutInfo>();
             BuildCheckouts.CollectionChanged += CollectionChanged;
-            Commands = new ObservableCollection<CommandScript>();
-            Commands.CollectionChanged += CollectionChanged;
+            Commands = new XDictionary<string, CommandScript>();
+            Commands.Changed += DictionaryChanged;
             Build = new ObservableCollection<string>();
             Build.CollectionChanged += CollectionChanged;
             PreBuild = new ObservableCollection<string>();
@@ -195,7 +217,7 @@ namespace AutoBuild
             PostBuild = source.PostBuild;
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts.CollectionChanged += CollectionChanged;
-            Commands.CollectionChanged += CollectionChanged;
+            Commands.Changed += DictionaryChanged;
             Build.CollectionChanged += CollectionChanged;
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;
@@ -206,7 +228,7 @@ namespace AutoBuild
         {
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts.CollectionChanged += CollectionChanged;
-            Commands.CollectionChanged += CollectionChanged;
+            Commands.Changed += DictionaryChanged;
             Build.CollectionChanged += CollectionChanged;
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;

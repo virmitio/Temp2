@@ -16,17 +16,17 @@ namespace AutoBuild
 
         public CommandScript()
         {
-            Name = String.Empty;
+//            Name = String.Empty;
             Commands = new List<string>();
         }
         public CommandScript(string name)
         {
-            Name = name;
+//            Name = name;
             Commands = new List<string>();
         }
         public CommandScript(string name, IEnumerable<string> lines)
         {
-            Name = name;
+//            Name = name;
             Commands = new List<string>(lines);
         }
 
@@ -66,6 +66,7 @@ namespace AutoBuild
             return Out.ToString();
         }
 
+/*
         /// <summary>
         /// This only compares against the name of the CommandScript.  For a command-level comparison, use Compare(object).
         /// </summary>
@@ -81,6 +82,7 @@ namespace AutoBuild
                 tmp = (string) obj;
             return Name.Equals(tmp, StringComparison.CurrentCultureIgnoreCase);
         }
+*/
 
         public bool Compare(object obj)
         {

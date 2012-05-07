@@ -18,6 +18,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
@@ -43,11 +44,16 @@ namespace AutoBuild
     class AutoBuild : ServiceBase
     {
         private Thread MasterThread;
-        public static AutoBuild_config MasterConfig;
-        public static EasyDictionary<string, ProjectData> Projects { get; private set; }
+        public static AutoBuild_config MasterConfig { get; private set; }
+        public static XDictionary<string, ProjectData> Projects { get; private set; }
+        private static Queue<string> WaitQueue;
+        private static int CurrentJobs = 0;
 
         public AutoBuild()
         {
+            WaitQueue = new Queue<string>();
+            Projects = new XDictionary<string, ProjectData>();
+            MasterConfig = new AutoBuild_config();
             MasterThread = new Thread(MasterControl);
             ServiceName = "AutoBuild";
             EventLog.Log = "Application";
@@ -183,35 +189,63 @@ namespace AutoBuild
                 trigger.Init();
         }
 
-        public static void Trigger(string projectName)
+        private static void StartBuild(string projectName)
         {
-            if (PreBuildActions(projectName) == 0)
-                if (Build(projectName) == 0)
-                    if (PostBuildActions(projectName) == 0)
-                        Record("Success", projectName);
+            BuildStatus build = new BuildStatus();
+            if (PreBuildActions(projectName, build) == 0)
+                if (Build(projectName, build) == 0)
+                    if (PostBuildActions(projectName, build) == 0)
+                        build.ChangeResult("Success");
                     else
-                        Record("Warning", projectName);
+                        build.ChangeResult("Warning");
                 else
-                    Record("Failed", projectName);
+                    build.ChangeResult("Failed");
             else
-                Record("Error", projectName);
-
+                build.ChangeResult("Error");
+            Projects[projectName].GetHistory().Append(build);
         }
 
-        public static int PreBuildActions(string projectName, BuildStatus status = null)
-        {
-        }
 
-        public static int PostBuildActions(string projectName, BuildStatus status = null)
-        {
-        }
-
-        public static int Build(string projectName, BuildStatus status = null)
+        public static void Trigger(string projectName)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
             if (!Projects.ContainsKey(projectName))
-                throw new ArgumentException("Project not found: "+projectName);
+                throw new ArgumentException("Project not found: " + projectName);
+
+            if (!(WaitQueue.Contains(projectName)) || Projects[projectName].AllowConcurrentBuilds)
+                WaitQueue.Enqueue(projectName);
+            Task.Factory.StartNew(ProcessQueue);
+        }
+
+
+        public static void ProcessQueue()
+        {
+            if (WaitQueue.Count > 0)
+            {
+                while (CurrentJobs < MasterConfig.MaxJobs)
+                {
+                    Task.Factory.StartNew(() =>
+                                              {
+                                                  CurrentJobs += 1;
+                                                  StartBuild(WaitQueue.Dequeue());
+                                              }, TaskCreationOptions.AttachedToParent).ContinueWith(
+                                  antecedent =>
+                                              {
+                                                  CurrentJobs -= 1;
+                                                  Task.Factory.StartNew(ProcessQueue);
+                                              });
+                }
+            }
+        }
+        
+
+        private static int doActions(string projectName, IEnumerable<string> commands, BuildStatus status = null)
+        {
+            if (projectName == null)
+                throw new ArgumentException("ProjectName cannot be null.");
+            if (!Projects.ContainsKey(projectName))
+                throw new ArgumentException("Project not found: " + projectName);
 
             status = status ?? new BuildStatus();
             ProjectData proj = Projects[projectName];
@@ -220,19 +254,19 @@ namespace AutoBuild
             StringBuilder std = new StringBuilder();
             _cmdexe.ResetStdOut(std);
             _cmdexe.ResetStdErr(std);
-            
-            foreach (string command in proj.Build)
+
+            foreach (string command in commands)
             {
                 status.Append("AutoBuild - Begin command:  " + command);
 
-                CommandScript tmp = new CommandScript(command);
-                if (proj.Commands.ContainsKey(tmp))
+                CommandScript tmp;
+                if (proj.Commands.ContainsKey(command))
                 {
-                    tmp = proj.Commands[tmp];
+                    tmp = proj.Commands[command];
                 }
-                else if (MasterConfig.Commands.ContainsKey(tmp))
+                else if (MasterConfig.Commands.ContainsKey(command))
                 {
-                    tmp = MasterConfig.Commands[tmp];
+                    tmp = MasterConfig.Commands[command];
                 }
                 else
                 {
@@ -248,6 +282,36 @@ namespace AutoBuild
             }
 
             return 0;
+        }
+
+        public static int PreBuildActions(string projectName, BuildStatus status = null)
+        {
+            if (projectName == null)
+                throw new ArgumentException("ProjectName cannot be null.");
+            if (!Projects.ContainsKey(projectName))
+                throw new ArgumentException("Project not found: " + projectName);
+
+            return doActions(projectName, Projects[projectName].PreBuild, status);
+        }
+
+        public static int PostBuildActions(string projectName, BuildStatus status = null)
+        {
+            if (projectName == null)
+                throw new ArgumentException("ProjectName cannot be null.");
+            if (!Projects.ContainsKey(projectName))
+                throw new ArgumentException("Project not found: " + projectName);
+
+            return doActions(projectName, Projects[projectName].PostBuild, status);
+        }
+
+        public static int Build(string projectName, BuildStatus status = null)
+        {
+            if (projectName == null)
+                throw new ArgumentException("ProjectName cannot be null.");
+            if (!Projects.ContainsKey(projectName))
+                throw new ArgumentException("Project not found: " + projectName);
+
+            return doActions(projectName, Projects[projectName].Build, status);
         }
     }
 }
