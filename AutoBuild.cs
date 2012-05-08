@@ -166,6 +166,144 @@ namespace AutoBuild
         }
 
 
+        protected void MasterChanged(AutoBuild_config config)
+        {
+            SaveConfig();
+        }
+
+        protected void ProjectChanged(ProjectData project)
+        {
+            string name = (string)Projects.FindKey(project);
+            if (name == null) // Can't do anything with this anyway...
+                return;
+
+            SaveProject(name);
+        }
+
+
+        /// <summary>
+        /// Loads the master config file from disk.
+        /// This will first check for a registry key to locate the config.xml.
+        /// If the file cannot be opened or cannot be found, a default config will be loaded
+        /// </summary>
+        /// <returns>True if a config file was successfully loaded.  False if a default config had to be generated.</returns>
+        public bool LoadConfig()
+        {
+            try
+            {
+                var regKey = Registry.LocalMachine.CreateSubKey(@"Software\CoApp\AutoBuild Service") ??
+                             Registry.LocalMachine.OpenSubKey(@"Software\CoApp\AutoBuild Service");
+                if (regKey == null)
+                    throw new Exception("Unable to load registry key.");
+                string configfile = (string)(regKey.GetValue("ConfigFile", null));
+                if (configfile == null)
+                {
+                    configfile = @"C:\AutoBuild\config.xml";
+                    regKey.SetValue("ConfigFile", configfile);
+                }
+                FileStream FS = File.Open(configfile, FileMode.OpenOrCreate);
+                MasterConfig = AutoBuild_config.FromXML(FS);
+                FS.Close();
+                MasterConfig.Changed += MasterChanged;
+                return true;
+            }
+            catch(Exception e)
+            {
+                WriteEvent("Unable to load master config:\n"+e.Message+"\n\nDefault config loaded.", EventLogEntryType.Error, 0, 0);
+                MasterConfig = new AutoBuild_config();
+                MasterConfig.Changed += MasterChanged; 
+                return false;
+            }
+
+        }
+
+        /// <summary>
+        /// Loads a project configuration from disk.
+        /// </summary>
+        /// <param name="projectName">The name of the project to load.</param>
+        /// <param name="overwrite">If true, will reload the project config data even if the project already has a configuration loaded.  (False by default)</param>
+        /// <returns>True if the project was loaded successfully.  False otherwise.</returns>
+        public bool LoadProject(string projectName, bool overwrite = false)
+        {
+            if (Projects.ContainsKey(projectName) && !overwrite)
+                return false;
+
+            try
+            {
+                if (projectName == null)
+                    throw new ArgumentException("ProjectName cannot be null.");
+                if (!Projects.ContainsKey(projectName))
+                    throw new ArgumentException("Project not found: " + projectName);
+
+                string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
+                FileStream FS = File.OpenRead(file);
+                Projects[projectName] = ProjectData.FromXML(FS);
+                FS.Close();
+                Projects[projectName].Changed += ProjectChanged;
+                return true;
+            }
+            catch (Exception e)
+            {
+                WriteEvent("Unable to load project config ("+projectName+"):\n"+e.Message,EventLogEntryType.Error,0,0);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Saves the master configuration data to disk.
+        /// </summary>
+        /// <returns>True if saved successfully.  False otherwise.</returns>
+        public bool SaveConfig()
+        {
+            try
+            {
+                var regKey = Registry.LocalMachine.CreateSubKey(@"Software\CoApp\AutoBuild Service") ??
+                             Registry.LocalMachine.OpenSubKey(@"Software\CoApp\AutoBuild Service");
+                if (regKey == null)
+                    throw new Exception("Unable to load registry key.");
+                string configfile = (string)(regKey.GetValue("ConfigFile", null));
+                if (configfile == null)
+                {
+                    configfile = @"C:\AutoBuild\config.xml";
+                    regKey.SetValue("ConfigFile", configfile);
+                }
+                File.WriteAllText(configfile, MasterConfig.ToXML());
+                return true;
+            }
+            catch (Exception e)
+            {
+                WriteEvent("Unable to save master config:\n" + e.Message, EventLogEntryType.Error, 0, 0);
+                return false;
+            }
+
+        }
+
+        /// <summary>
+        /// Saves a project config to disk.
+        /// </summary>
+        /// <param name="projectName">Name of the project</param>
+        /// <returns>True if saved successfully.  False otherwise.</returns>
+        public bool SaveProject(string projectName)
+        {
+            try
+            {
+                if (projectName == null)
+                    throw new ArgumentException("ProjectName cannot be null.");
+                if (!Projects.ContainsKey(projectName))
+                    throw new ArgumentException("Project not found: " + projectName);
+
+                string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
+                File.WriteAllText(file, Projects[projectName].ToXML());
+                return true;
+            }
+            catch (Exception e)
+            {
+                WriteEvent("Unable to save project config (" + projectName + "):\n" + e.Message, EventLogEntryType.Error, 0, 0);
+                return false;
+            }
+
+        }
+
         protected void WriteEvent(string Message, EventLogEntryType EventType, int ID, short Category)
         {
             EventLog.WriteEntry(Message, EventType, ID, Category);
@@ -205,7 +343,6 @@ namespace AutoBuild
             Projects[projectName].GetHistory().Append(build);
         }
 
-
         public static void Trigger(string projectName)
         {
             if (projectName == null)
@@ -217,7 +354,6 @@ namespace AutoBuild
                 WaitQueue.Enqueue(projectName);
             Task.Factory.StartNew(ProcessQueue);
         }
-
 
         public static void ProcessQueue()
         {
@@ -238,7 +374,6 @@ namespace AutoBuild
                 }
             }
         }
-        
 
         private static int doActions(string projectName, IEnumerable<string> commands, BuildStatus status = null)
         {
@@ -284,7 +419,7 @@ namespace AutoBuild
             return 0;
         }
 
-        public static int PreBuildActions(string projectName, BuildStatus status = null)
+        private static int PreBuildActions(string projectName, BuildStatus status = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
@@ -294,7 +429,7 @@ namespace AutoBuild
             return doActions(projectName, Projects[projectName].PreBuild, status);
         }
 
-        public static int PostBuildActions(string projectName, BuildStatus status = null)
+        private static int PostBuildActions(string projectName, BuildStatus status = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
@@ -304,7 +439,7 @@ namespace AutoBuild
             return doActions(projectName, Projects[projectName].PostBuild, status);
         }
 
-        public static int Build(string projectName, BuildStatus status = null)
+        private static int Build(string projectName, BuildStatus status = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
@@ -313,5 +448,7 @@ namespace AutoBuild
 
             return doActions(projectName, Projects[projectName].Build, status);
         }
+
+
     }
 }

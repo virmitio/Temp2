@@ -7,9 +7,13 @@ using CoApp.Toolkit.Collections;
 
 namespace AutoBuild
 {
+    public delegate void MasterConfigChangeHandler(AutoBuild_config sender);
+
     [XmlRoot(ElementName = "AutoBuild_config", Namespace = "http://coapp.org/automation/build")]
-    class AutoBuild_config
+    public class AutoBuild_config
     {
+        private const string DEFAULTROOT = @"C:\AutoBuild\Packages";
+
         //XML Serialization methods
         public string ToXML()
         {
@@ -38,7 +42,7 @@ namespace AutoBuild
         }
 
         //Actual class data
-        private bool Changed;
+        public event MasterConfigChangeHandler Changed;
 
         [XmlElement]
         public bool DefaultCleanRepo
@@ -46,11 +50,23 @@ namespace AutoBuild
             get { return _DefaultCleanRepo; }
             set
             {
-                Changed = true;
+                ChangedEvent();
                 _DefaultCleanRepo = value;
             }
         }
         private bool _DefaultCleanRepo;
+
+        [XmlElement]
+        public bool UseGithubListener
+        {
+            get { return _UseGithubListener; }
+            set
+            {
+                ChangedEvent();
+                _UseGithubListener = value;
+            }
+        }
+        private bool _UseGithubListener;
 
         [XmlElement]
         public string ProjectRoot
@@ -58,7 +74,7 @@ namespace AutoBuild
             get { return _ProjectRoot; }
             set
             {
-                Changed = true;
+                ChangedEvent();
                 _ProjectRoot = value;
             }
         }
@@ -70,32 +86,41 @@ namespace AutoBuild
             get { return _MaxJobs; }
             set
             {
-                Changed = true;
+                ChangedEvent();
                 _MaxJobs = value;
             }
         }
         private int _MaxJobs;
         
         [XmlArray(IsNullable = false)]
-        public XDictionary<string, VersionControl> VCSList { get; internal set; }
+        public XDictionary<string, VersionControl> VersionControlList { get; internal set; }
 
         [XmlArray(IsNullable = false)]
-        public ObservableCollection<string> DefaultCommands { get; internal set; }
+        public XDictionary<string, List<string>> DefaultCommands { get; internal set; }
 
         [XmlArray(IsNullable = false)]
         public XDictionary<string, CommandScript> Commands { get; internal set; }
 
 
 
-
-
-        void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void ChangedEvent()
         {
-            Changed = true;
+            if (Changed != null)
+                Changed(this);
         }
-        void DictionaryChanged(IDictionary<string, CommandScript> dict)
+
+
+        private void DefaultCommandsChanged(IDictionary<string, List<string>> dict)
         {
-            Changed = true;
+            ChangedEvent();
+        }
+        private void VCSChanged(IDictionary<string, VersionControl> dict)
+        {
+            ChangedEvent();
+        }
+        private void CommandsChanged(IDictionary<string, CommandScript> dict)
+        {
+            ChangedEvent();
         }
 
 
@@ -106,32 +131,42 @@ namespace AutoBuild
         //Default constructor.  Always good to have one of these.
         public AutoBuild_config()
         {
-            Changed = false;
+            _DefaultCleanRepo = true;
+            _UseGithubListener = true;
+            _ProjectRoot = DEFAULTROOT;
+            _MaxJobs = 4;
+            VersionControlList = new XDictionary<string, VersionControl>();
+            DefaultCommands = new XDictionary<string, List<string>>();
+            Commands = new XDictionary<string, CommandScript>();
 
-
-
-            Enabled = false;
-            KeepCleanRepo = true;
-            RepoURL = String.Empty;
-            WatchRefs = new List<string>();
-            BuildCheckouts = new List<CheckoutObject>();
-            Commands = new List<Command>();
+            VersionControlList.Changed += VCSChanged;
+            DefaultCommands.Changed += DefaultCommandsChanged;
+            Commands.Changed += CommandsChanged;
         }
 
         //A copy constructor, because I'm always annoyed when I can't find one.
         public AutoBuild_config(AutoBuild_config source)
         {
-            Enabled = source.Enabled;
-            KeepCleanRepo = source.KeepCleanRepo;
-            RepoURL = source.RepoURL;
-            WatchRefs = source.WatchRefs;
-            BuildCheckouts = source.BuildCheckouts;
-            Commands = source.Commands;
+            _DefaultCleanRepo = source.DefaultCleanRepo;
+            _UseGithubListener = source.UseGithubListener;
+            _ProjectRoot = source.ProjectRoot;
+            _MaxJobs = source.MaxJobs;
+            VersionControlList = new XDictionary<string, VersionControl>(source.VersionControlList);
+            DefaultCommands = new XDictionary<string, List<string>>(source.DefaultCommands);
+            Commands = new XDictionary<string, CommandScript>(source.Commands);
+
+            VersionControlList.Changed += VCSChanged;
+            DefaultCommands.Changed += DefaultCommandsChanged;
+            Commands.Changed += CommandsChanged;
         }
 
         //And a stream constructor in case I ever feel I need it.
         public AutoBuild_config(Stream XMLinput) : this(FromXML(XMLinput))
-        {}
+        {
+            VersionControlList.Changed += VCSChanged;
+            DefaultCommands.Changed += DefaultCommandsChanged;
+            Commands.Changed += CommandsChanged;
+        }
 
     }
 }

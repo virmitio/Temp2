@@ -383,7 +383,7 @@ namespace AutoBuild
                     {
                         string username = json.commits[i].author.username.Value;
 
-                        if (username.Equals((string)(AutoBuild.MasterConfig.VCSList["git"].Properties["username"]),StringComparison.CurrentCultureIgnoreCase))
+                        if (username.Equals((string)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["username"]),StringComparison.CurrentCultureIgnoreCase))
                         {
                             validTrigger = true;
                         }
@@ -399,7 +399,7 @@ namespace AutoBuild
                         }
                         else
                         {
-                            if ((bool)(AutoBuild.MasterConfig.VCSList["git"].Properties["NewFromHook"]))
+                            if ((bool)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["NewFromHook"]))
                             {
                                 /////Build new ProjectInfo info from commit message.
                                 ProjectData project = new ProjectData();
@@ -413,7 +413,7 @@ namespace AutoBuild
                                 init_url = init_url.Substring(proto.Length - 1);
                                 string host = init_url.Substring(0, init_url.IndexOf("/"));
                                 string repo = init_url.Substring(init_url.IndexOf("/" + 1));
-                                switch (((string)(AutoBuild.MasterConfig.VCSList["git"].Properties["url_style"])).ToLower())
+                                switch (((string)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["url_style"])).ToLower())
                                 {
                                     case "git":
                                         project.RepoURL = "git://"+host+"/"+repo;

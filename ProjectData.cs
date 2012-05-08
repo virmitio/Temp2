@@ -8,6 +8,8 @@ using CoApp.Toolkit.Collections;
 
 namespace AutoBuild
 {
+    public delegate void ProjectChangeHandler(ProjectData sender);
+
     [XmlRoot(ElementName = "ProjectData", Namespace = "http://coapp.org/automation/build")]
     public class ProjectData : XmlObject
     {
@@ -58,15 +60,17 @@ namespace AutoBuild
         }
 
         //Actual class data
-        private bool Changed;
         private BuildHistory History;
+
+        public event ProjectChangeHandler Changed;
 
         [XmlElement]
         public bool Enabled
         {
             get { return _Enabled; }
-            set { 
-                Changed = true;
+            set
+            {
+                ChangedEvent();
                 _Enabled = value;
             }
         }
@@ -78,7 +82,7 @@ namespace AutoBuild
             get { return _KeepCleanRepo; }
             set
             {
-                Changed = true;
+                ChangedEvent();
                 _KeepCleanRepo = value;
             }
         }
@@ -90,7 +94,7 @@ namespace AutoBuild
             get { return _AllowConcurrentBuilds; }
             set
             {
-                Changed = true;
+                ChangedEvent();
                 _AllowConcurrentBuilds = value;
             }
         }
@@ -103,7 +107,7 @@ namespace AutoBuild
             get { return _RepoURL; }
             set
             {
-                Changed = true;
+                ChangedEvent();
                 _RepoURL = value;
             }
         }
@@ -115,7 +119,7 @@ namespace AutoBuild
             get { return _VersionControl; }
             set
             {
-                Changed = true;
+                ChangedEvent();
                 _VersionControl = value;
             }
         }
@@ -142,25 +146,19 @@ namespace AutoBuild
         [XmlArray(IsNullable = false)]
         public ObservableCollection<string> PostBuild;
 
+        private void ChangedEvent()
+        {
+            if (Changed != null)
+                Changed(this);
+        }
+
         void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            Changed = true;
+            ChangedEvent();
         }
         void DictionaryChanged(IDictionary<string, CommandScript> dict)
         {
-            Changed = true;
-        }
-
-        public bool HasChanged()
-        {
-            return Changed;
-        }
-
-        public bool ResetChanged()
-        {
-            bool tmp = Changed;
-            Changed = false;
-            return tmp;
+            ChangedEvent();
         }
 
         public BuildHistory GetHistory()
@@ -209,12 +207,12 @@ namespace AutoBuild
             Enabled = source.Enabled;
             KeepCleanRepo = source.KeepCleanRepo;
             RepoURL = source.RepoURL;
-            WatchRefs = source.WatchRefs;
-            BuildCheckouts = source.BuildCheckouts;
-            Commands = source.Commands;
-            Build = source.Build;
-            PreBuild = source.PreBuild;
-            PostBuild = source.PostBuild;
+            WatchRefs = new ObservableCollection<string>(source.WatchRefs);
+            BuildCheckouts = new ObservableCollection<CheckoutInfo>(source.BuildCheckouts);
+            Commands = new XDictionary<string, CommandScript>(source.Commands);
+            Build = new ObservableCollection<string>(source.Build);
+            PreBuild = new ObservableCollection<string>(source.PreBuild);
+            PostBuild = new ObservableCollection<string>(source.PostBuild);
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts.CollectionChanged += CollectionChanged;
             Commands.Changed += DictionaryChanged;

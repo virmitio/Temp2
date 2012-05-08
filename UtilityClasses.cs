@@ -56,7 +56,7 @@ namespace AutoBuild
         public Tool Tool { get; private set; }
 
         [XmlArray(IsNullable = false)]
-        public EasyDictionary<string, object> Properties { get; private set; }
+        public XDictionary<string, object> Properties { get; private set; }
 
         public void SetTool(Tool tool)
         {
@@ -79,7 +79,7 @@ namespace AutoBuild
                 throw new ArgumentNullException("name", "VersionControl.Name cannot be null.");
             Name = name;
             this.Tool = tool;
-            Properties = new EasyDictionary<string, object>(properties);
+            Properties = new XDictionary<string, object>(properties);
         }
 
     }
@@ -242,6 +242,55 @@ namespace AutoBuild
         }
     }
 
+    public static class XDictionaryExtensions
+    {
+        
+        /// <summary>
+        /// Finds the first key which contains a value with the provided object.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dict">the dictionary to look through</param>
+        /// <param name="searchValue">object to look for in the dictionary</param>
+        /// <returns>The first key found which contains the searchValue in its value.  Returns null if no match is found.</returns>
+        public static object FindKey<TKey, TValue>(this XDictionary<TKey, TValue> dict, object searchValue)
+        {
+            foreach (KeyValuePair<TKey, TValue> pair in dict)
+            {
+                dynamic val = pair.Value;
+                if (val is IEnumerable<TValue>)
+                    if (val.Contains(searchValue))
+                        return pair.Key;
+                if (val.Equals(searchValue))
+                    return pair.Key;
+            }
+            return null;
+        }
 
+        /// <summary>
+        /// Finds all keys which contain the searchValue in their value.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dict">dictionary to look through</param>
+        /// <param name="searchValue">object to serch for</param>
+        /// <returns>An enumerable set containing all keys located, or null if no matches were found.</returns>
+        public static IEnumerable<TKey> FindKeys<TKey, TValue>(this XDictionary<TKey, TValue> dict, TValue searchValue)
+        {
+            List<TKey> found = new List<TKey>();
+
+            foreach (KeyValuePair<TKey, TValue> pair in dict)
+            {
+                dynamic val = pair.Value;
+                if (val is IEnumerable<TValue>)
+                    if (val.Contains(searchValue))
+                        found.Add(pair.Key);
+                if (val.Equals(searchValue))
+                    found.Add(pair.Key);
+            }
+            
+            return found.Count <= 0 ? null : found;
+        }
+    }
 
 }
