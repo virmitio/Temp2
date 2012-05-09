@@ -62,7 +62,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="AutoBuild_config.cs" />
-    <Compile Include="CommandScript.cs" />
+    <Compile Include="Commands.cs" />
     <Compile Include="ListenAgent.cs" />
     <Compile Include="ProcessUtility.cs" />
     <Compile Include="ProjectData.cs" />

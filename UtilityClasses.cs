@@ -12,83 +12,56 @@ namespace AutoBuild
     [XmlRoot(ElementName = "Tool", Namespace = "http://coapp.org/automation/build")]
     public class Tool
     {
-        [XmlElement]
-        public string Name { get; private set; }
-        [XmlElement]
-        public string Path { get; private set; }
-        [XmlArray(IsNullable = false)]
-        public string[] Switches { get; private set; }
+        [XmlElement] 
+        public string Name;
+        [XmlElement] 
+        public string Path;
+        [XmlArray(IsNullable = false)] 
+        public string[] Switches;
 
         public Tool(string name, string path, string[] switches)
         {
             Name = name;
-            Path = System.IO.File.Exists(path)?path:
-                System.IO.File.Exists(System.IO.Path.GetFullPath(path))?System.IO.Path.GetFullPath(path):
+            Path = File.Exists(path) ? path :
+                File.Exists(System.IO.Path.GetFullPath(path)) ? System.IO.Path.GetFullPath(path) :
                 null;
             Switches = switches;
         }
 
-        /// <summary>
-        /// Sets a new path for this tool.
-        /// This will ALWAYS set the path, regardless of whether it exists or not.
-        /// </summary>
-        /// <param name="newPath"></param>
-        /// <returns>True - If the new path appears to exist.  False otherwise.</returns>
-        public bool SetPath(string newPath)
-        {
-            Path = newPath;
-            return System.IO.File.Exists(newPath) || System.IO.File.Exists(System.IO.Path.GetFullPath(newPath));
-        }
-
-        public void SetSwitches(string[] newSwitches)
-        {
-            Switches = newSwitches;
-        }
+        private Tool()
+        {}
     }
 
     [XmlRoot(ElementName = "VersionControl", Namespace = "http://coapp.org/automation/build")]
     public class VersionControl
     {
-        [XmlAttribute]
-        public string Name { get; private set; }
-
         [XmlElement]
-        public Tool Tool { get; private set; }
-
-        [XmlArray(IsNullable = false)]
-        public XDictionary<string, object> Properties { get; private set; }
-
-        public void SetTool(Tool tool)
-        {
-            this.Tool = tool;
-        }
-
-        public void SetProperty(string key, object value)
-        {
-            Properties[key] = value;
-        }
-
-        public bool RemoveProperty(string key)
-        {
-            return Properties.Remove(key);
-        }
+        public string Name;
+        [XmlElement]
+        public Tool Tool;
+        [XmlElement]
+        public XDictionary<string, object> Properties;
 
         public VersionControl(string name, Tool tool = null, IDictionary<string,object> properties = null)
         {
             if (name == null)
                 throw new ArgumentNullException("name", "VersionControl.Name cannot be null.");
             Name = name;
-            this.Tool = tool;
-            Properties = new XDictionary<string, object>(properties);
+            Tool = tool;
+            Properties = properties == null
+                              ? new XDictionary<string, object>()
+                              : new XDictionary<string, object>(properties);
         }
 
+        private VersionControl()
+        {}
     }
 
     [XmlRoot(ElementName = "BuildTrigger", Namespace = "http://coapp.org/automation/build")]
     public abstract class BuildTrigger
     {
-        [XmlAttribute]
-        public string Type { get; protected set; }
+        [XmlAttribute] 
+        public string Type;
 
         public abstract void Init();
     }
@@ -98,14 +71,14 @@ namespace AutoBuild
     {
         private bool Locked = true;
 
-        [XmlElement]
-        public string Result { get; private set; }
+        [XmlElement] 
+        public string Result;
 
-        [XmlElement]
-        public DateTime TimeStamp { get; private set; }
+        [XmlElement] 
+        public DateTime TimeStamp;
 
-        [XmlElement]
-        public string LogData { get; private set; }
+        [XmlElement] 
+        public string LogData;
 
         /// <summary>
         /// This will set the result for this BuildStatus iff the status is not locked and Result is currently set to null.
@@ -158,8 +131,8 @@ namespace AutoBuild
     [XmlRoot(ElementName = "BuildHistory", Namespace = "http://coapp.org/automation/build")]
     public class BuildHistory
     {
-        [XmlArray(IsNullable = false)]
-        public List<BuildStatus> Builds { get; protected set; }
+        [XmlArray(IsNullable = false)] 
+        public List<BuildStatus> Builds;
 
         /// <summary>
         /// This will populate the Builds list from an XML input stream.
@@ -291,6 +264,12 @@ namespace AutoBuild
             
             return found.Count <= 0 ? null : found;
         }
+    }
+
+    public abstract class Daemon
+    {
+        public abstract bool Start();
+        public abstract bool Stop();
     }
 
 }

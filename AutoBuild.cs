@@ -43,32 +43,33 @@ namespace AutoBuild
 
     class AutoBuild : ServiceBase
     {
-        private Thread MasterThread;
         public static AutoBuild_config MasterConfig { get; private set; }
         public static XDictionary<string, ProjectData> Projects { get; private set; }
         private static Queue<string> WaitQueue;
-        private static int CurrentJobs = 0;
+        private static List<string> Running;
+        private static int CurrentJobs;
+        public static List<Daemon> Daemons;
 
         public AutoBuild()
         {
+            Daemons = new List<Daemon>();
             WaitQueue = new Queue<string>();
+            Running = new List<string>();
             Projects = new XDictionary<string, ProjectData>();
             MasterConfig = new AutoBuild_config();
-            MasterThread = new Thread(MasterControl);
             ServiceName = "AutoBuild";
             EventLog.Log = "Application";
             EventLog.Source = ServiceName;
             // Events to enable
             CanHandlePowerEvent = false;
             CanHandleSessionChangeEvent = false;
-            CanPauseAndContinue = true;
+            CanPauseAndContinue = false;
             CanShutdown = true;
             CanStop = true;
         }
 
         static void Main()
         {
-            /*
             AutoBuild Manager = new AutoBuild();
             Manager.OnStart(new string[0]);
             ConsoleKeyInfo c = new ConsoleKeyInfo(' ',ConsoleKey.Spacebar,false,false,false);
@@ -80,8 +81,7 @@ namespace AutoBuild
                     c = Console.ReadKey(true);
             }
             Manager.OnStop();
-             */
-
+            
 
             ////uncomment this for release...
             //ServiceBase.Run(new AutoBuild());
@@ -104,8 +104,8 @@ namespace AutoBuild
             base.OnStart(args);
 
             // Always double-check that we have an actual thread to work with...
-            MasterThread = MasterThread ?? new Thread(MasterControl);
-            MasterThread.Start();
+            InitWorld();
+            LoadQueue();
         }
 
         /// <summary>
@@ -114,9 +114,24 @@ namespace AutoBuild
         /// </summary>
         protected override void OnStop()
         {
-            //I think this may be the wrong answer here, but I don't know yet.
-            MasterThread.Abort();
-            MasterThread.Join();
+            // Start by halting any further builds from starting
+            CurrentJobs += 10000;
+
+            // We should halt any daemons we have running...
+            foreach (var daemon in Daemons)
+            {
+                daemon.Stop();
+            }
+
+            // Save all current configuration info.
+            SaveConfig();
+            foreach (var proj in Projects.Keys)
+            {
+                SaveProject(proj);
+            }
+
+            //Dump the current build queue to a pending list.
+            SaveQueue();
 
             base.OnStop();
         }
@@ -127,9 +142,8 @@ namespace AutoBuild
         /// </summary>
         protected override void OnPause()
         {
-            //do something
-            UpdateTimer.Change(0, TimerReset);
-            base.OnPause();
+            // Presently not implemented.
+            // This is disabled above in AutoBuild().
         }
 
         /// <summary>
@@ -138,31 +152,58 @@ namespace AutoBuild
         /// </summary>
         protected override void OnContinue()
         {
-            UpdateTimer.Change(0, TimerReset);
-            base.OnContinue();
+            // Presently not implemented.
+            // This is disabled above in AutoBuild().
+        }
+
+        protected override void OnShutdown()
+        {
+            OnStop();
+            base.OnShutdown();
         }
 
         #endregion
 
 
-        protected void MasterControl()
+        protected void InitWorld()
         {
-            //-locate config files
-            //-read master config file
+            // Load the master config
+            LoadConfig();
+
+            // Find and load all projects
+            DirectoryInfo ProjectRoot = new DirectoryInfo(MasterConfig.ProjectRoot);
+            if (Directory.Exists(ProjectRoot.ToString()))
+            {
+                DirectoryInfo[] children = ProjectRoot.GetDirectories();
+                foreach (DirectoryInfo child in children)
+                {
+                    LoadProject(child.Name);
+                }
+            }
             //-initialize listeners
-            //-scan projects
-            ////-read project config files
+            foreach (string name in Projects.Keys)
+            {
+                InitProject(name);
+            }
+
+            // Sometime, I need to make this a switchable option.
+            // I also need to provide a better plugin mechanism for new listeners.
+            if (MasterConfig.UseGithubListener)
+            {
+                ListenAgent agent = new ListenAgent();
+                agent.Logger = (message => WriteEvent(message, EventLogEntryType.Warning, 0, 1));
+                if (agent.Start())
+                {
+                    Daemons.Add(agent);
+                }
+                else
+                {
+                    agent.Stop();
+                    WriteEvent("ListenAgent failed to start properly.", EventLogEntryType.Error, 0, 0);
+                }
+            }
+
             ////-start timers as appropriate
-            
-            /*
-             * I need a thread/task pool to limit the number of projects trying 
-             *  to run at once.  I also need a queueing system for that pool and
-             *  easy-to-use methods for interacting with it (otherwise I'll forget
-             *  how to use it).
-             * Listener and timer actions should place requests in the queue when
-             *  triggered.  They should also be smart enough to not place 
-             *  themselves on the queue multiple times at once.
-             */
         }
 
 
@@ -171,15 +212,61 @@ namespace AutoBuild
             SaveConfig();
         }
 
-        protected void ProjectChanged(ProjectData project)
+        protected void ProjectChanged(string project)
         {
-            string name = (string)Projects.FindKey(project);
-            if (name == null) // Can't do anything with this anyway...
-                return;
-
-            SaveProject(name);
+            SaveProject(project);
         }
 
+
+        private static void LoadQueue()
+        {
+            var regKey = Registry.LocalMachine.CreateSubKey(@"Software\CoApp\AutoBuild Service") ??
+             Registry.LocalMachine.OpenSubKey(@"Software\CoApp\AutoBuild Service");
+            if (regKey == null)
+                throw new Exception("Unable to load registry key.");
+            string configfile = (string)(regKey.GetValue("ConfigFile", null));
+            string path = Path.GetDirectoryName(configfile);
+            if (path == null)
+                return;
+            path = Path.Combine(path, "PreviouslyQueued.txt");
+            
+            if (!File.Exists(path)) 
+                return;
+
+            string[] queue = File.ReadAllLines(path);
+            foreach (var s in queue)
+            {
+                try
+                {
+                    Trigger(s);
+                }
+                catch (Exception e)
+                {
+                }
+            }
+            // Clean up the file now that we've read it.
+            File.Delete(path);
+        }
+
+        private static void SaveQueue()
+        {
+            var regKey = Registry.LocalMachine.CreateSubKey(@"Software\CoApp\AutoBuild Service") ??
+             Registry.LocalMachine.OpenSubKey(@"Software\CoApp\AutoBuild Service");
+            if (regKey == null)
+                throw new Exception("Unable to load registry key.");
+            string configfile = (string)(regKey.GetValue("ConfigFile", null));
+            string path = Path.GetDirectoryName(configfile);
+            if (path == null)
+                return;
+            StringBuilder SB = new StringBuilder();
+            while (WaitQueue.Count > 0)
+            {
+                SB.AppendLine(WaitQueue.Dequeue());
+            }
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            File.WriteAllText(Path.Combine(path, "PreviouslyQueued.txt"), SB.ToString());
+        }
 
         /// <summary>
         /// Loads the master config file from disk.
@@ -201,9 +288,7 @@ namespace AutoBuild
                     configfile = @"C:\AutoBuild\config.xml";
                     regKey.SetValue("ConfigFile", configfile);
                 }
-                FileStream FS = File.Open(configfile, FileMode.OpenOrCreate);
-                MasterConfig = AutoBuild_config.FromXML(FS);
-                FS.Close();
+                MasterConfig = AutoBuild_config.FromXML(File.ReadAllText(configfile));
                 MasterConfig.Changed += MasterChanged;
                 return true;
             }
@@ -236,10 +321,9 @@ namespace AutoBuild
                     throw new ArgumentException("Project not found: " + projectName);
 
                 string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
-                FileStream FS = File.OpenRead(file);
-                Projects[projectName] = ProjectData.FromXML(FS);
-                FS.Close();
-                Projects[projectName].Changed += ProjectChanged;
+                Projects[projectName] = ProjectData.FromXML(File.ReadAllText(file));
+                Projects[projectName].SetName(projectName);
+                Projects[projectName].Changed2 += ProjectChanged;
                 return true;
             }
             catch (Exception e)
@@ -267,6 +351,8 @@ namespace AutoBuild
                     configfile = @"C:\AutoBuild\config.xml";
                     regKey.SetValue("ConfigFile", configfile);
                 }
+                if (!Directory.Exists(Path.GetDirectoryName(configfile)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(configfile));
                 File.WriteAllText(configfile, MasterConfig.ToXML());
                 return true;
             }
@@ -293,6 +379,9 @@ namespace AutoBuild
                     throw new ArgumentException("Project not found: " + projectName);
 
                 string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
+                if (!Directory.Exists(Path.GetDirectoryName(file)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(file));
+
                 File.WriteAllText(file, Projects[projectName].ToXML());
                 return true;
             }
@@ -350,7 +439,7 @@ namespace AutoBuild
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
-            if (!(WaitQueue.Contains(projectName)) || Projects[projectName].AllowConcurrentBuilds)
+            if (!(WaitQueue.Contains(projectName) || Running.Contains(projectName)) || Projects[projectName].AllowConcurrentBuilds)
                 WaitQueue.Enqueue(projectName);
             Task.Factory.StartNew(ProcessQueue);
         }
@@ -361,13 +450,16 @@ namespace AutoBuild
             {
                 while (CurrentJobs < MasterConfig.MaxJobs)
                 {
+                    CurrentJobs += 1;
+                    string proj = WaitQueue.Dequeue();
                     Task.Factory.StartNew(() =>
                                               {
-                                                  CurrentJobs += 1;
-                                                  StartBuild(WaitQueue.Dequeue());
+                                                  Running.Add(proj);
+                                                  StartBuild(proj);
                                               }, TaskCreationOptions.AttachedToParent).ContinueWith(
                                   antecedent =>
                                               {
+                                                  Running.Remove(proj);
                                                   CurrentJobs -= 1;
                                                   Task.Factory.StartNew(ProcessQueue);
                                               });
@@ -394,7 +486,7 @@ namespace AutoBuild
             {
                 status.Append("AutoBuild - Begin command:  " + command);
 
-                CommandScript tmp;
+                Command tmp;
                 if (proj.Commands.ContainsKey(command))
                 {
                     tmp = proj.Commands[command];
@@ -410,7 +502,7 @@ namespace AutoBuild
                     return (int)Errors.NoCommand;
                 }
 
-                int retVal = tmp.Run(_cmdexe, MasterConfig.ProjectRoot + @"\" + projectName);
+                int retVal = tmp.Run(projectName, _cmdexe, new object[0]);
                 status.Append(_cmdexe.StandardOut);
                 if (retVal != 0)
                     return retVal;

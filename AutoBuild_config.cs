@@ -92,14 +92,17 @@ namespace AutoBuild
         }
         private int _MaxJobs;
         
-        [XmlArray(IsNullable = false)]
-        public XDictionary<string, VersionControl> VersionControlList { get; internal set; }
+//        [XmlArray(IsNullable = false)]
+        [XmlElement]
+        public XDictionary<string, VersionControl> VersionControlList;
 
-        [XmlArray(IsNullable = false)]
-        public XDictionary<string, List<string>> DefaultCommands { get; internal set; }
+//        [XmlArray(IsNullable = false)]
+        [XmlElement]
+        public XDictionary<string, List<string>> DefaultCommands;
 
-        [XmlArray(IsNullable = false)]
-        public XDictionary<string, CommandScript> Commands { get; internal set; }
+//        [XmlArray(IsNullable = false)]
+        [XmlElement]
+        public XDictionary<string, Command> Commands;
 
 
 
@@ -118,7 +121,7 @@ namespace AutoBuild
         {
             ChangedEvent();
         }
-        private void CommandsChanged(IDictionary<string, CommandScript> dict)
+        private void CommandsChanged(IDictionary<string, Command> dict)
         {
             ChangedEvent();
         }
@@ -137,7 +140,7 @@ namespace AutoBuild
             _MaxJobs = 4;
             VersionControlList = new XDictionary<string, VersionControl>();
             DefaultCommands = new XDictionary<string, List<string>>();
-            Commands = new XDictionary<string, CommandScript>();
+            Commands = new XDictionary<string, Command>();
 
             VersionControlList.Changed += VCSChanged;
             DefaultCommands.Changed += DefaultCommandsChanged;
@@ -153,7 +156,7 @@ namespace AutoBuild
             _MaxJobs = source.MaxJobs;
             VersionControlList = new XDictionary<string, VersionControl>(source.VersionControlList);
             DefaultCommands = new XDictionary<string, List<string>>(source.DefaultCommands);
-            Commands = new XDictionary<string, CommandScript>(source.Commands);
+            Commands = new XDictionary<string, Command>(source.Commands);
 
             VersionControlList.Changed += VCSChanged;
             DefaultCommands.Changed += DefaultCommandsChanged;

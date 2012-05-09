@@ -9,6 +9,7 @@ using CoApp.Toolkit.Collections;
 namespace AutoBuild
 {
     public delegate void ProjectChangeHandler(ProjectData sender);
+    public delegate void AltProjectChangeHandler(string sender);
 
     [XmlRoot(ElementName = "ProjectData", Namespace = "http://coapp.org/automation/build")]
     public class ProjectData : XmlObject
@@ -61,8 +62,10 @@ namespace AutoBuild
 
         //Actual class data
         private BuildHistory History;
+        private string Name;
 
         public event ProjectChangeHandler Changed;
+        public event AltProjectChangeHandler Changed2;
 
         [XmlElement]
         public bool Enabled
@@ -131,8 +134,8 @@ namespace AutoBuild
         [XmlArray(IsNullable = false)]
         public ObservableCollection<CheckoutInfo> BuildCheckouts;
 
-        [XmlArray(IsNullable = false)]
-        public XDictionary<string, CommandScript> Commands;
+        [XmlElement]
+        public XDictionary<string, Command> Commands;
 
         [XmlArray(IsNullable = false)]
         public ObservableCollection<BuildTrigger> BuildTriggers;
@@ -150,13 +153,15 @@ namespace AutoBuild
         {
             if (Changed != null)
                 Changed(this);
+            if (Changed2 != null)
+                Changed2(Name);
         }
 
         void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             ChangedEvent();
         }
-        void DictionaryChanged(IDictionary<string, CommandScript> dict)
+        void DictionaryChanged(IDictionary<string, Command> dict)
         {
             ChangedEvent();
         }
@@ -164,6 +169,16 @@ namespace AutoBuild
         public BuildHistory GetHistory()
         {
             return History;
+        }
+
+        /// <summary>
+        /// Sets the internal name of this project.
+        /// This is only used as an internal reference for lookup by the service.
+        /// </summary>
+        /// <param name="newName"></param>
+        public void SetName(string newName)
+        {
+            Name = newName;
         }
 
         /// <summary>
@@ -191,7 +206,7 @@ namespace AutoBuild
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts = new ObservableCollection<CheckoutInfo>();
             BuildCheckouts.CollectionChanged += CollectionChanged;
-            Commands = new XDictionary<string, CommandScript>();
+            Commands = new XDictionary<string, Command>();
             Commands.Changed += DictionaryChanged;
             Build = new ObservableCollection<string>();
             Build.CollectionChanged += CollectionChanged;
@@ -209,7 +224,7 @@ namespace AutoBuild
             RepoURL = source.RepoURL;
             WatchRefs = new ObservableCollection<string>(source.WatchRefs);
             BuildCheckouts = new ObservableCollection<CheckoutInfo>(source.BuildCheckouts);
-            Commands = new XDictionary<string, CommandScript>(source.Commands);
+            Commands = new XDictionary<string, Command>(source.Commands);
             Build = new ObservableCollection<string>(source.Build);
             PreBuild = new ObservableCollection<string>(source.PreBuild);
             PostBuild = new ObservableCollection<string>(source.PostBuild);

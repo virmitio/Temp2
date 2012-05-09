@@ -37,6 +37,8 @@ namespace AutoBuild
         }
     }
 
+    public delegate void Logger(string message);
+
     public class Listener
     {
         private readonly HttpListener _listener = new HttpListener();
@@ -44,6 +46,13 @@ namespace AutoBuild
         private readonly List<int> _ports = new List<int>();
         private readonly Dictionary<string, RequestHandler> _paths = new Dictionary<string, RequestHandler>();
         private Task<HttpListenerContext> _current = null;
+
+        public static Logger Logger;
+        private static void WriteLog(string message)
+        {
+            if (Logger != null)
+                Logger(message);
+        }
 
         public Listener()
         {}
@@ -182,7 +191,7 @@ namespace AutoBuild
                     {
                         foreach (var path in _paths.Keys)
                         {
-                            Console.WriteLine("Adding `http://{0}:{1}{2}`".format(host, port, path));
+                            WriteLog("Adding `http://{0}:{1}{2}`".format(host, port, path));
                             _listener.Prefixes.Add("http://{0}:{1}{2}".format(host, port, path));
                         }
                     }
@@ -334,7 +343,7 @@ namespace AutoBuild
             if (e is AggregateException)
                 e = (e as AggregateException).Flatten().InnerExceptions[0];
 
-            Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+            WriteLog("{0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace));
         }
     }
 
@@ -352,8 +361,20 @@ namespace AutoBuild
 
     public class PostHandler : RequestHandler
     {
+        public static Logger Logger;
+        private static void WriteLog(string message)
+        {
+            if (Logger != null)
+                Logger(message);
+        }
+
         public PostHandler()
-        {}
+        { }
+
+        public PostHandler(Logger logger)
+        {
+            Logger = logger;
+        }
 
         public override Task Post(HttpListenerResponse response, string relativePath, UrlEncodedMessage message)
         {
@@ -370,7 +391,7 @@ namespace AutoBuild
                 try
                 {
                     dynamic json = JObject.Parse(payload);
-                    Console.WriteLine("MSG Process begin {0}", json.commits.Count);
+                    WriteLog("MSG Process begin "+json.commits.Count);
 
                     var repository = (json.repository.name)??String.Empty;
                     var reference = json["ref"].ToString();
@@ -403,6 +424,7 @@ namespace AutoBuild
                             {
                                 /////Build new ProjectInfo info from commit message.
                                 ProjectData project = new ProjectData();
+                                project.SetName(repository);
 
                                 project.Enabled = true;
                                 project.KeepCleanRepo = AutoBuild.MasterConfig.DefaultCleanRepo;
@@ -431,7 +453,23 @@ namespace AutoBuild
                                 // End repo url section
 
                                 if (!(AutoBuild.MasterConfig.DefaultCommands.IsNullOrEmpty()))
-                                    project.Commands.Add(new CommandScript("Default",AutoBuild.MasterConfig.DefaultCommands));
+                                {
+                                    //prebuild
+                                    foreach (string s in AutoBuild.MasterConfig.DefaultCommands["prebuild"])
+                                    {
+                                        project.PreBuild.Add(s);
+                                    }
+                                    //build
+                                    foreach (string s in AutoBuild.MasterConfig.DefaultCommands["build"])
+                                    {
+                                        project.Build.Add(s);
+                                    }
+                                    //postbuild
+                                    foreach (string s in AutoBuild.MasterConfig.DefaultCommands["postbuild"])
+                                    {
+                                        project.PostBuild.Add(s);
+                                    }
+                                }
                                 
                                 //We're obviously adding a git repo for this project, so assign that for the project's version control
                                 project.VersionControl = "git";
@@ -448,7 +486,7 @@ namespace AutoBuild
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Error processing payload: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                    WriteLog("Error processing payload: {0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace));
                     Listener.HandleException(e);
                     response.StatusCode = 500;
                     response.Close();
@@ -460,7 +498,7 @@ namespace AutoBuild
                 if (result.IsFaulted)
                 {
                     var e = antecedent.Exception.InnerException;
-                    Console.WriteLine("Error handling commit message: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                    WriteLog("Error handling commit message: {0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace));
                     Listener.HandleException(e);
                     response.StatusCode = 500;
                     response.Close();
@@ -471,55 +509,86 @@ namespace AutoBuild
         }
     }
 
-    class ListenAgent
+    public class ListenAgent : Daemon
     {
-        int main(string[] args)
+        private bool initDone = false;
+        private Listener listener;
+        public Logger Logger;
+        public string[] hosts { get; private set; }
+        public int[] ports { get; private set; }
+        public string postfix { get; private set; }
+
+        public ListenAgent(string handle = null, string[] Hosts = null, int[] Ports = null, Logger logger = null)
         {
-            var hosts = new string[] { "*" };
-            var ports = new int[] { 80 };
-            var commitMessage = "trigger";
-            var packageUpload = "upload";
+            initDone = false;
+            postfix = handle ?? "trigger";
+            hosts = Hosts ?? new string[] { "*" };
+            ports = Ports ?? new int[] { 80 };
+            Logger = logger;
+        }
+
+        /// <summary>
+        /// Initializes the internal listener.
+        /// </summary>
+        /// <returns>True if successful.  False on error.</returns>
+        public bool Init()
+        {
+            if (initDone)
+                try
+                { listener.Stop(); }
+                catch (Exception e)
+                { }
 
             try
             {
-                var listener = new Listener();
-
-                // get startup information.
-
+                Listener.Logger = Logger;
+                listener = new Listener();
                 foreach (var host in hosts)
-                {
                     listener.AddHost(host);
-                }
 
                 foreach (var port in ports)
-                {
                     listener.AddPort(port);
-                }
 
-
-                listener.AddHandler(commitMessage, new PostHandler());
-
-                listener.Start();
-
-                Console.WriteLine("Press ctrl-c to stop the listener.");
-
-                while (true)
-                {
-                    // one day, Ill put a check to restart the server in here.
-                    Thread.Sleep(60 * 1000);
-
-                }
-
-                listener.Stop();
+                listener.AddHandler(postfix, new PostHandler(Logger));
+                return true;
             }
             catch (Exception e)
             {
                 Listener.HandleException(e);
-                CancellationTokenSource.Cancel();
+                return false;
             }
-
-
-            return -1;
         }
-    }
+
+        public override bool Start()
+        {
+            if (!initDone)
+                Init();
+
+            try
+            {
+                listener.Start();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Listener.HandleException(e);
+                return false;
+            }
+        }
+
+        public override bool Stop()
+        {
+            try
+            {
+                listener.Stop();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Listener.HandleException(e);
+                return false;
+            }
+        }
+
+    } // End ListenAgent
 }
