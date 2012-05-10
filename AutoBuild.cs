@@ -418,18 +418,41 @@ namespace AutoBuild
 
         private static void StartBuild(string projectName)
         {
-            BuildStatus build = new BuildStatus();
-            if (PreBuildActions(projectName, build) == 0)
-                if (Build(projectName, build) == 0)
-                    if (PostBuildActions(projectName, build) == 0)
-                        build.ChangeResult("Success");
+            
+            if (Projects[projectName].BuildCheckouts.Any())
+            {
+                foreach (var checkout in Projects[projectName].BuildCheckouts.Keys)
+                {
+                    BuildStatus build = new BuildStatus();
+                    build.Append("Log for project ["+projectName+"] on reference ["+checkout+"]");
+                    if (PreBuildActions(projectName, build, checkout) == 0)
+                        if (BuildActions(projectName, build, checkout) == 0)
+                            if (PostBuildActions(projectName, build, checkout) == 0)
+                                build.ChangeResult("Success");
+                            else
+                                build.ChangeResult("Warning");
+                        else
+                            build.ChangeResult("Failed");
                     else
-                        build.ChangeResult("Warning");
-                else
-                    build.ChangeResult("Failed");
+                        build.ChangeResult("Error");
+                    Projects[projectName].GetHistory().Append(build);
+                }
+            }
             else
-                build.ChangeResult("Error");
-            Projects[projectName].GetHistory().Append(build);
+            {
+                BuildStatus build = new BuildStatus();
+                if (PreBuildActions(projectName, build) == 0)
+                    if (BuildActions(projectName, build) == 0)
+                        if (PostBuildActions(projectName, build) == 0)
+                            build.ChangeResult("Success");
+                        else
+                            build.ChangeResult("Warning");
+                    else
+                        build.ChangeResult("Failed");
+                else
+                    build.ChangeResult("Error");
+                Projects[projectName].GetHistory().Append(build);
+            }
         }
 
         public static void Trigger(string projectName)
@@ -467,12 +490,14 @@ namespace AutoBuild
             }
         }
 
-        private static int doActions(string projectName, IEnumerable<string> commands, BuildStatus status = null)
+        private static int doActions(string projectName, IEnumerable<string> commands, BuildStatus status = null, XDictionary<string, string> Macros = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
+
+            Macros = Macros ?? new XDictionary<string, string>();
 
             status = status ?? new BuildStatus();
             ProjectData proj = Projects[projectName];
@@ -482,11 +507,31 @@ namespace AutoBuild
             _cmdexe.ResetStdOut(std);
             _cmdexe.ResetStdErr(std);
 
+            Func<string> getToolSwitches = () =>
+                                               {
+                                                   string ret = String.Empty;
+                                                   foreach (
+                                                       string s in
+                                                           MasterConfig.VersionControlList[proj.VersionControl].Tool.
+                                                               Switches)
+                                                       if (s.Contains(" "))
+                                                           ret += " \"" + s + "\"";
+                                                       else
+                                                           ret += " " + s;
+                                                   return ret;
+                                               };
+
+            Macros["project"] = projectName;
+            Macros["vcstool"] = MasterConfig.VersionControlList[proj.VersionControl].Tool.Path;
+            Macros["vcsswitches"] = getToolSwitches();
+            Macros["keepclean"] = proj.KeepCleanRepo.ToString();
+
             foreach (string command in commands)
             {
                 status.Append("AutoBuild - Begin command:  " + command);
+                Macros["currentcommand"] = command;
 
-                Command tmp;
+                CommandScript tmp;
                 if (proj.Commands.ContainsKey(command))
                 {
                     tmp = proj.Commands[command];
@@ -499,10 +544,10 @@ namespace AutoBuild
                 {
                     // Can't locate the specified command.  Bail with error.
                     status.Append("AutoBuild Error:  Unable to locate command script: " + command);
-                    return (int)Errors.NoCommand;
+                    return (int) Errors.NoCommand;
                 }
 
-                int retVal = tmp.Run(projectName, _cmdexe, new object[0]);
+                int retVal = tmp.Run(_cmdexe, projectName, new XDictionary<string, string>(Macros));
                 status.Append(_cmdexe.StandardOut);
                 if (retVal != 0)
                     return retVal;
@@ -511,33 +556,54 @@ namespace AutoBuild
             return 0;
         }
 
-        private static int PreBuildActions(string projectName, BuildStatus status = null)
+        private static int PreBuildActions(string projectName, BuildStatus status = null, string checkoutRef = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
+            if (checkoutRef != null)
+            {
+                XDictionary<string, string> macros = new XDictionary<string, string>();
+                macros["checkout"] = checkoutRef;
+                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].PreCmd, null, macros);
+            }
+            // else
             return doActions(projectName, Projects[projectName].PreBuild, status);
         }
 
-        private static int PostBuildActions(string projectName, BuildStatus status = null)
+        private static int PostBuildActions(string projectName, BuildStatus status = null, string checkoutRef = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
+            if (checkoutRef != null)
+            {
+                XDictionary<string, string> macros = new XDictionary<string, string>();
+                macros["checkout"] = checkoutRef;
+                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].ArchiveCmd, null, macros);
+            }
+            // else
             return doActions(projectName, Projects[projectName].PostBuild, status);
         }
 
-        private static int Build(string projectName, BuildStatus status = null)
+        private static int BuildActions(string projectName, BuildStatus status = null, string checkoutRef = null)
         {
             if (projectName == null)
                 throw new ArgumentException("ProjectName cannot be null.");
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
+            if (checkoutRef != null)
+            {
+                XDictionary<string, string> macros = new XDictionary<string, string>();
+                macros["checkout"] = checkoutRef;
+                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].BuildCmd, null, macros);
+            }
+            // else
             return doActions(projectName, Projects[projectName].Build, status);
         }
 

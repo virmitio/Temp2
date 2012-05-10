@@ -102,7 +102,7 @@ namespace AutoBuild
 
 //        [XmlArray(IsNullable = false)]
         [XmlElement]
-        public XDictionary<string, Command> Commands;
+        public XDictionary<string, CommandScript> Commands;
 
 
 
@@ -121,7 +121,7 @@ namespace AutoBuild
         {
             ChangedEvent();
         }
-        private void CommandsChanged(IDictionary<string, Command> dict)
+        private void CommandsChanged(IDictionary<string, CommandScript> dict)
         {
             ChangedEvent();
         }
@@ -140,7 +140,7 @@ namespace AutoBuild
             _MaxJobs = 4;
             VersionControlList = new XDictionary<string, VersionControl>();
             DefaultCommands = new XDictionary<string, List<string>>();
-            Commands = new XDictionary<string, Command>();
+            Commands = new XDictionary<string, CommandScript>();
 
             VersionControlList.Changed += VCSChanged;
             DefaultCommands.Changed += DefaultCommandsChanged;
@@ -156,7 +156,7 @@ namespace AutoBuild
             _MaxJobs = source.MaxJobs;
             VersionControlList = new XDictionary<string, VersionControl>(source.VersionControlList);
             DefaultCommands = new XDictionary<string, List<string>>(source.DefaultCommands);
-            Commands = new XDictionary<string, Command>(source.Commands);
+            Commands = new XDictionary<string, CommandScript>(source.Commands);
 
             VersionControlList.Changed += VCSChanged;
             DefaultCommands.Changed += DefaultCommandsChanged;

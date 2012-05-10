@@ -162,7 +162,7 @@ namespace AutoBuild
         /// This will populate the Builds list from an XML input stream.
         /// NOTE: This will only make changes to Builds if Builds is empty or null.
         /// </summary>
-        /// <param name="XmlStream">Stream containing XML data</param>
+        /// <param name="XmlString">Stream containing XML data</param>
         /// <returns>True if Builds was altered.</returns>
         public bool ImportHistory(string XmlString)
         {

@@ -3,70 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml.Serialization;
+using CoApp.Toolkit.Collections;
+using CoApp.Toolkit.Extensions;
 
 namespace AutoBuild
 {
-    [XmlRoot(ElementName = "Command", Namespace = "http://coapp.org/automation/build")]
-    public abstract class Command
-    {
-        public abstract int Run(string project, ProcessUtility console, object[] args);
-    }
-
-    [XmlRoot(ElementName = "Checkout", Namespace = "http://coapp.org/automation/build")]
-    public class Checkout : Command
-    {
-        public override int Run(string project, ProcessUtility console, object[] args)
-        {
-            string root = AutoBuild.MasterConfig.ProjectRoot + @"\" + project;
-            var tool = AutoBuild.MasterConfig.VersionControlList[AutoBuild.Projects[project].VersionControl].Tool;
-
-            if (AutoBuild.Projects[project].KeepCleanRepo)
-            {
-                if (!Directory.Exists(Path.Combine(root, "Clean")))
-                    Directory.CreateDirectory(Path.Combine(root, "Clean"));
-                if (Directory.Exists(Path.Combine(root, "Clean", ".git")))
-                {
-                    //already cloned, just need to fetch and merge
-                    Environment.CurrentDirectory = Path.Combine(root, "Clean");
-                    List<string> argList = new List<string>();
-                    argList.Add("/c"); // run then terminate
-                    argList.Add(tool.Path);
-                    argList.AddRange(tool.Switches);
-                    argList.Add("fetch");
-                    argList.Add(AutoBuild.Projects[project].RepoURL);
-                    foreach (var info in AutoBuild.Projects[project].BuildCheckouts)
-                    {
-                        List<string> tmpArgs = new List<string>(argList);
-                        tmpArgs.Add(info.Reference);
-                        int val = console.Exec(tmpArgs.ToArray());
-                        if (val != 0)
-                            return val;
-                    }
-                    
-                }
-                else
-                {
-                    //need to clone the repo
-                    Environment.CurrentDirectory = root;
-                }
-            }
-
-
-
-
-
-            if (!Directory.Exists(Path.Combine(root, "Working")))
-                Directory.CreateDirectory(Path.Combine(root, "Working"));
-            
-
-
-
-            return 0;
-        }
-    }
-
     [XmlRoot(ElementName = "CommandScript", Namespace = "http://coapp.org/automation/build")]
-    public class CommandScript : Command
+    public class CommandScript
     {
         [XmlArray(IsNullable = false)]
         public List<string> Commands;
@@ -84,14 +27,15 @@ namespace AutoBuild
             Commands = new List<string>(lines);
         }
 
-        public int Run(string path)
+        public int Run(string project, XDictionary<string, string> macros)
         {
             ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
-            return Run(_cmdexe, path);
+            return Run(_cmdexe, project, macros);
         }
 
-        public int Run(ProcessUtility exe, string path)
+        public int Run(ProcessUtility exe, string project, XDictionary<string, string> macros)
         {
+            string path = AutoBuild.MasterConfig.ProjectRoot + @"\" + project;
             // Reset my working directory.
             Environment.CurrentDirectory = path;
                 
@@ -100,45 +44,54 @@ namespace AutoBuild
             tmpFile += ".bat";
             FileStream file = new FileStream(tmpFile,FileMode.Open);
             StreamWriter FS = new StreamWriter(file);
+            macros.Default = null;
 
             foreach (string command in Commands)
             {
-                FS.WriteLine(command);
+                FS.WriteLine(command.FormatWithMacros((input) =>
+                {
+                    string Default = null;
+                    if (input.Contains("??"))
+                    {
+                        var parts = input.Split(new[] { '?' }, StringSplitOptions.RemoveEmptyEntries);
+                        Default = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                        input = parts[0];
+                    }
+                    return (macros[input.ToLower()] ?? Default) ?? input;
+                }
+                ));
             }
 
             FS.Close();
             return exe.Exec(@"/c """ + tmpFile + @"""");
         }
 
-        public string Flatten()
+        public string Flatten(XDictionary<string, string> macros = null)
         {
             StringBuilder Out = new StringBuilder();
-            foreach (string s in Commands)
-            {
-                Out.AppendLine(s);
-            }
+            if (macros == null)
+                foreach (string s in Commands) 
+                    Out.AppendLine(s);
+            else
+                foreach (string s in Commands)
+                    Out.AppendLine(s.FormatWithMacros((input) =>
+                                                          {
+                                                              string Default = null;
+                                                              if (input.Contains("??"))
+                                                              {
+                                                                  var parts = input.Split(new[] {'?'},
+                                                                                          StringSplitOptions.
+                                                                                              RemoveEmptyEntries);
+                                                                  Default = parts.Length > 1
+                                                                                ? parts[1].Trim()
+                                                                                : string.Empty;
+                                                                  input = parts[0];
+                                                              }
+                                                              return (macros[input.ToLower()] ?? Default) ?? input;
+                                                          }));
+            
             return Out.ToString();
         }
 
-        public int Run(object[] Params)
-        {
-            try
-            {
-                if (Params.Length == 1)
-                    return Run((string) Params[0]);
-                if (Params.Length >= 2)
-                    return Run((ProcessUtility) Params[0], (string) Params[1]);
-                return (int) Errors.NoCommand;
-            }
-            catch(Exception e)
-            {
-                return (int)Errors.NoCommand;
-            }
-        }
-
-        public override int Run(string project, ProcessUtility console, object[] args)
-        {
-            return Run(console, AutoBuild.MasterConfig.ProjectRoot + @"\" + project);
-        }
     }
 }

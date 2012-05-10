@@ -12,7 +12,7 @@ namespace AutoBuild
     public delegate void AltProjectChangeHandler(string sender);
 
     [XmlRoot(ElementName = "ProjectData", Namespace = "http://coapp.org/automation/build")]
-    public class ProjectData : XmlObject
+    public class ProjectData
     {
         //XML Serialization methods
         public string ToXML()
@@ -43,20 +43,20 @@ namespace AutoBuild
 
         //Inner classes
         [XmlRoot(ElementName = "CheckoutInfo", Namespace = "http://coapp.org/automation/build")]
-        public class CheckoutInfo : XmlObject
+        public class CheckoutInfo
         {
-            [XmlAttribute]
-            public string Reference;
-            [XmlAttribute]
-            public string BuildCmd;
-            [XmlAttribute]
-            public string ArchiveCmd;
+            [XmlElement]
+            public List<string> PreCmd;
+            [XmlElement]
+            public List<string> BuildCmd;
+            [XmlElement]
+            public List<string> ArchiveCmd;
 
             public CheckoutInfo()
             {
-                Reference = String.Empty;
-                BuildCmd = String.Empty;
-                ArchiveCmd = String.Empty;
+                PreCmd = new List<string>();
+                BuildCmd = new List<string>();
+                ArchiveCmd = new List<string>();
             }
         }
 
@@ -132,10 +132,10 @@ namespace AutoBuild
         public ObservableCollection<string> WatchRefs;
 
         [XmlArray(IsNullable = false)]
-        public ObservableCollection<CheckoutInfo> BuildCheckouts;
+        public XDictionary<string, CheckoutInfo> BuildCheckouts;
 
         [XmlElement]
-        public XDictionary<string, Command> Commands;
+        public XDictionary<string, CommandScript> Commands;
 
         [XmlArray(IsNullable = false)]
         public ObservableCollection<BuildTrigger> BuildTriggers;
@@ -161,7 +161,11 @@ namespace AutoBuild
         {
             ChangedEvent();
         }
-        void DictionaryChanged(IDictionary<string, Command> dict)
+        void CommandsChanged(IDictionary<string, CommandScript> dict)
+        {
+            ChangedEvent();
+        }
+        void CheckoutsChanged(IDictionary<string, CheckoutInfo> dict)
         {
             ChangedEvent();
         }
@@ -204,10 +208,10 @@ namespace AutoBuild
             RepoURL = String.Empty;
             WatchRefs = new ObservableCollection<string>();
             WatchRefs.CollectionChanged += CollectionChanged;
-            BuildCheckouts = new ObservableCollection<CheckoutInfo>();
-            BuildCheckouts.CollectionChanged += CollectionChanged;
-            Commands = new XDictionary<string, Command>();
-            Commands.Changed += DictionaryChanged;
+            BuildCheckouts = new XDictionary<string, CheckoutInfo>();
+            BuildCheckouts.Changed += CheckoutsChanged;
+            Commands = new XDictionary<string, CommandScript>();
+            Commands.Changed += CommandsChanged;
             Build = new ObservableCollection<string>();
             Build.CollectionChanged += CollectionChanged;
             PreBuild = new ObservableCollection<string>();
@@ -223,14 +227,14 @@ namespace AutoBuild
             KeepCleanRepo = source.KeepCleanRepo;
             RepoURL = source.RepoURL;
             WatchRefs = new ObservableCollection<string>(source.WatchRefs);
-            BuildCheckouts = new ObservableCollection<CheckoutInfo>(source.BuildCheckouts);
-            Commands = new XDictionary<string, Command>(source.Commands);
+            BuildCheckouts = new XDictionary<string, CheckoutInfo>(source.BuildCheckouts);
+            Commands = new XDictionary<string, CommandScript>(source.Commands);
             Build = new ObservableCollection<string>(source.Build);
             PreBuild = new ObservableCollection<string>(source.PreBuild);
             PostBuild = new ObservableCollection<string>(source.PostBuild);
             WatchRefs.CollectionChanged += CollectionChanged;
-            BuildCheckouts.CollectionChanged += CollectionChanged;
-            Commands.Changed += DictionaryChanged;
+            BuildCheckouts.Changed += CheckoutsChanged;
+            Commands.Changed += CommandsChanged;
             Build.CollectionChanged += CollectionChanged;
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;
@@ -240,8 +244,8 @@ namespace AutoBuild
         public ProjectData(Stream XMLinput) : this(FromXML(XMLinput))
         {
             WatchRefs.CollectionChanged += CollectionChanged;
-            BuildCheckouts.CollectionChanged += CollectionChanged;
-            Commands.Changed += DictionaryChanged;
+            BuildCheckouts.Changed += CheckoutsChanged;
+            Commands.Changed += CommandsChanged;
             Build.CollectionChanged += CollectionChanged;
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;
