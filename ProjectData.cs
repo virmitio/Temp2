@@ -199,7 +199,21 @@ namespace AutoBuild
             //This means we don't see a file by that name.  Maybe it's just an Xml string?
             return History.ImportHistory(XmlFile);
         }
-        
+
+
+        /// <summary>
+        /// Loads a history directly.  This will do nothing if a history has already been loaded for this project.
+        /// </summary>
+        /// <param name="history">The BuildHistory object to attach to this project.</param>
+        /// <returns>True if the history was attached.  False otherwise.</returns>
+        public bool LoadHistory(BuildHistory history)
+        {
+            if (History != null)
+                return false;
+            History = history;
+            return true;
+        }
+
         //Default constructor.  Always good to have one of these.
         public ProjectData()
         {
@@ -212,6 +226,8 @@ namespace AutoBuild
             BuildCheckouts.Changed += CheckoutsChanged;
             Commands = new XDictionary<string, CommandScript>();
             Commands.Changed += CommandsChanged;
+            BuildTriggers = new ObservableCollection<BuildTrigger>();
+            BuildTriggers.CollectionChanged += CollectionChanged;
             Build = new ObservableCollection<string>();
             Build.CollectionChanged += CollectionChanged;
             PreBuild = new ObservableCollection<string>();
@@ -229,12 +245,14 @@ namespace AutoBuild
             WatchRefs = new ObservableCollection<string>(source.WatchRefs);
             BuildCheckouts = new XDictionary<string, CheckoutInfo>(source.BuildCheckouts);
             Commands = new XDictionary<string, CommandScript>(source.Commands);
+            BuildTriggers = new ObservableCollection<BuildTrigger>(source.BuildTriggers);
             Build = new ObservableCollection<string>(source.Build);
             PreBuild = new ObservableCollection<string>(source.PreBuild);
             PostBuild = new ObservableCollection<string>(source.PostBuild);
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts.Changed += CheckoutsChanged;
             Commands.Changed += CommandsChanged;
+            BuildTriggers.CollectionChanged += CollectionChanged;
             Build.CollectionChanged += CollectionChanged;
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;
@@ -246,6 +264,7 @@ namespace AutoBuild
             WatchRefs.CollectionChanged += CollectionChanged;
             BuildCheckouts.Changed += CheckoutsChanged;
             Commands.Changed += CommandsChanged;
+            BuildTriggers.CollectionChanged += CollectionChanged;
             Build.CollectionChanged += CollectionChanged;
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;

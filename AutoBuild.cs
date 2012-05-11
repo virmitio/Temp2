@@ -72,7 +72,7 @@ namespace AutoBuild
         {
             AutoBuild Manager = new AutoBuild();
             Manager.OnStart(new string[0]);
-            ConsoleKeyInfo c = new ConsoleKeyInfo(' ',ConsoleKey.Spacebar,false,false,false);
+            ConsoleKeyInfo c = new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false);
             while (!(c.Key.Equals(ConsoleKey.Escape)))
             {
                 Console.Out.Write('.');
@@ -81,7 +81,7 @@ namespace AutoBuild
                     c = Console.ReadKey(true);
             }
             Manager.OnStop();
-            
+
 
             ////uncomment this for release...
             //ServiceBase.Run(new AutoBuild());
@@ -229,8 +229,8 @@ namespace AutoBuild
             if (path == null)
                 return;
             path = Path.Combine(path, "PreviouslyQueued.txt");
-            
-            if (!File.Exists(path)) 
+
+            if (!File.Exists(path))
                 return;
 
             string[] queue = File.ReadAllLines(path);
@@ -292,11 +292,11 @@ namespace AutoBuild
                 MasterConfig.Changed += MasterChanged;
                 return true;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                WriteEvent("Unable to load master config:\n"+e.Message+"\n\nDefault config loaded.", EventLogEntryType.Error, 0, 0);
+                WriteEvent("Unable to load master config:\n" + e.Message + "\n\nDefault config loaded.", EventLogEntryType.Error, 0, 0);
                 MasterConfig = new AutoBuild_config();
-                MasterConfig.Changed += MasterChanged; 
+                MasterConfig.Changed += MasterChanged;
                 return false;
             }
 
@@ -323,12 +323,13 @@ namespace AutoBuild
                 string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
                 Projects[projectName] = ProjectData.FromXML(File.ReadAllText(file));
                 Projects[projectName].SetName(projectName);
+                Projects[projectName].LoadHistory(Path.Combine(MasterConfig.ProjectRoot, projectName, "Log.xml"));
                 Projects[projectName].Changed2 += ProjectChanged;
                 return true;
             }
             catch (Exception e)
             {
-                WriteEvent("Unable to load project config ("+projectName+"):\n"+e.Message,EventLogEntryType.Error,0,0);
+                WriteEvent("Unable to load project config (" + projectName + "):\n" + e.Message, EventLogEntryType.Error, 0, 0);
                 return false;
             }
         }
@@ -378,11 +379,13 @@ namespace AutoBuild
                 if (!Projects.ContainsKey(projectName))
                     throw new ArgumentException("Project not found: " + projectName);
 
-                string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
-                if (!Directory.Exists(Path.GetDirectoryName(file)))
-                    Directory.CreateDirectory(Path.GetDirectoryName(file));
+                string path = Path.Combine(MasterConfig.ProjectRoot, projectName);
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
 
-                File.WriteAllText(file, Projects[projectName].ToXML());
+                File.WriteAllText(Path.Combine(path, "config.xml"), Projects[projectName].ToXML());
+                File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().ExportXml());
+                
                 return true;
             }
             catch (Exception e)
@@ -402,7 +405,8 @@ namespace AutoBuild
         {
             if (Projects.ContainsKey(projectName))
                 throw new ArgumentException("A project with this name already exists: " + projectName);
-            Projects.Add(projectName, project);
+            Projects[projectName] = project;
+            Projects[projectName].LoadHistory(new BuildHistory());
             InitProject(projectName);
         }
 
@@ -418,13 +422,13 @@ namespace AutoBuild
 
         private static void StartBuild(string projectName)
         {
-            
+
             if (Projects[projectName].BuildCheckouts.Any())
             {
                 foreach (var checkout in Projects[projectName].BuildCheckouts.Keys)
                 {
                     BuildStatus build = new BuildStatus();
-                    build.Append("Log for project ["+projectName+"] on reference ["+checkout+"]");
+                    build.Append("Log for project [" + projectName + "] on reference [" + checkout + "]");
                     if (PreBuildActions(projectName, build, checkout) == 0)
                         if (BuildActions(projectName, build, checkout) == 0)
                             if (PostBuildActions(projectName, build, checkout) == 0)
@@ -476,16 +480,16 @@ namespace AutoBuild
                     CurrentJobs += 1;
                     string proj = WaitQueue.Dequeue();
                     Task.Factory.StartNew(() =>
-                                              {
-                                                  Running.Add(proj);
-                                                  StartBuild(proj);
-                                              }, TaskCreationOptions.AttachedToParent).ContinueWith(
+                    {
+                        Running.Add(proj);
+                        StartBuild(proj);
+                    }, TaskCreationOptions.AttachedToParent).ContinueWith(
                                   antecedent =>
-                                              {
-                                                  Running.Remove(proj);
-                                                  CurrentJobs -= 1;
-                                                  Task.Factory.StartNew(ProcessQueue);
-                                              });
+                                  {
+                                      Running.Remove(proj);
+                                      CurrentJobs -= 1;
+                                      Task.Factory.StartNew(ProcessQueue);
+                                  });
                 }
             }
         }
@@ -508,18 +512,18 @@ namespace AutoBuild
             _cmdexe.ResetStdErr(std);
 
             Func<string> getToolSwitches = () =>
-                                               {
-                                                   string ret = String.Empty;
-                                                   foreach (
-                                                       string s in
-                                                           MasterConfig.VersionControlList[proj.VersionControl].Tool.
-                                                               Switches)
-                                                       if (s.Contains(" "))
-                                                           ret += " \"" + s + "\"";
-                                                       else
-                                                           ret += " " + s;
-                                                   return ret;
-                                               };
+            {
+                string ret = String.Empty;
+                foreach (
+                    string s in
+                        MasterConfig.VersionControlList[proj.VersionControl].Tool.
+                            Switches)
+                    if (s.Contains(" "))
+                        ret += " \"" + s + "\"";
+                    else
+                        ret += " " + s;
+                return ret;
+            };
 
             Macros["project"] = projectName;
             Macros["vcstool"] = MasterConfig.VersionControlList[proj.VersionControl].Tool.Path;
@@ -544,7 +548,7 @@ namespace AutoBuild
                 {
                     // Can't locate the specified command.  Bail with error.
                     status.Append("AutoBuild Error:  Unable to locate command script: " + command);
-                    return (int) Errors.NoCommand;
+                    return (int)Errors.NoCommand;
                 }
 
                 int retVal = tmp.Run(_cmdexe, projectName, new XDictionary<string, string>(Macros));

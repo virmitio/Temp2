@@ -55,7 +55,7 @@ namespace AutoBuild
         }
 
         public Listener()
-        {}
+        { }
 
         Regex ipAddrRx = new Regex(@"^([1-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(\.([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])){3}$");
         Regex hostnameRx = new Regex(@"(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*");
@@ -164,12 +164,12 @@ namespace AutoBuild
             try
             { Stop(); }
             catch
-            {}
+            { }
 
             try
             { Start(); }
             catch
-            {}
+            { }
 
         }
 
@@ -391,20 +391,20 @@ namespace AutoBuild
                 try
                 {
                     dynamic json = JObject.Parse(payload);
-                    WriteLog("MSG Process begin "+json.commits.Count);
+                    WriteLog("MSG Process begin " + json.commits.Count);
 
-                    var repository = (json.repository.name)??String.Empty;
-                    var reference = json["ref"].ToString();
+                    string repository = (json.repository.name) ?? String.Empty;
+                    string reference = json["ref"].ToString();
 
-                    var count = json.commits.Count;
-                    var validTrigger = false;
+                    int count = json.commits.Count;
+                    bool validTrigger = false;
 
 
                     for (int i = 0; i < count; i++)
                     {
                         string username = json.commits[i].author.username.Value;
 
-                        if (username.Equals((string)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["username"]),StringComparison.CurrentCultureIgnoreCase))
+                        if (!username.Equals((string)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["username"]), StringComparison.CurrentCultureIgnoreCase))
                         {
                             validTrigger = true;
                         }
@@ -428,23 +428,23 @@ namespace AutoBuild
 
                                 project.Enabled = true;
                                 project.KeepCleanRepo = AutoBuild.MasterConfig.DefaultCleanRepo;
-                                
+
                                 // This section constructs the repo url to use...
-                                string init_url = json.url;
+                                string init_url = json.repository.url;
                                 string proto = init_url.Substring(0, init_url.IndexOf("://") + 3);
-                                init_url = init_url.Substring(proto.Length - 1);
+                                init_url = init_url.Substring(proto.Length);
                                 string host = init_url.Substring(0, init_url.IndexOf("/"));
-                                string repo = init_url.Substring(init_url.IndexOf("/" + 1));
+                                string repo = init_url.Substring(init_url.IndexOf("/") + 1);
                                 switch (((string)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["url_style"])).ToLower())
                                 {
                                     case "git":
-                                        project.RepoURL = "git://"+host+"/"+repo;
+                                        project.RepoURL = "git://" + host + "/" + repo;
                                         break;
                                     case "http":
                                         project.RepoURL = json.url;
                                         break;
                                     case "ssh":
-                                        project.RepoURL = "git@"+host+":"+repo;
+                                        project.RepoURL = "git@" + host + ":" + repo;
                                         break;
                                     default:
                                         project.RepoURL = null;
@@ -470,7 +470,7 @@ namespace AutoBuild
                                         project.PostBuild.Add(s);
                                     }
                                 }
-                                
+
                                 //We're obviously adding a git repo for this project, so assign that for the project's version control
                                 project.VersionControl = "git";
 
