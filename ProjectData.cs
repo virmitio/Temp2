@@ -5,6 +5,7 @@ using System.Security.AccessControl;
 using System.Xml.Serialization;
 using System.Collections.Generic;
 using CoApp.Toolkit.Collections;
+using CoApp.Toolkit.Extensions;
 
 namespace AutoBuild
 {
@@ -14,7 +15,9 @@ namespace AutoBuild
     [XmlRoot(ElementName = "ProjectData", Namespace = "http://coapp.org/automation/build")]
     public class ProjectData
     {
-        //XML Serialization methods
+
+        #region XML Serialization methods
+        /*
         public string ToXML()
         {
             XmlSerializer S = new XmlSerializer(typeof(ProjectData));
@@ -40,16 +43,14 @@ namespace AutoBuild
             XmlSerializer S = new XmlSerializer(typeof(ProjectData));
             return (ProjectData)S.Deserialize(XMLinput);
         }
+        */
+        #endregion
 
         //Inner classes
-        [XmlRoot(ElementName = "CheckoutInfo", Namespace = "http://coapp.org/automation/build")]
         public class CheckoutInfo
         {
-            [XmlElement]
             public List<string> PreCmd;
-            [XmlElement]
             public List<string> BuildCmd;
-            [XmlElement]
             public List<string> ArchiveCmd;
 
             public CheckoutInfo()
@@ -67,7 +68,7 @@ namespace AutoBuild
         public event ProjectChangeHandler Changed;
         public event AltProjectChangeHandler Changed2;
 
-        [XmlElement]
+        [NotPersistable]
         public bool Enabled
         {
             get { return _Enabled; }
@@ -77,9 +78,10 @@ namespace AutoBuild
                 _Enabled = value;
             }
         }
+        [Persistable]
         private bool _Enabled;
 
-        [XmlElement]
+        [NotPersistable]
         public bool KeepCleanRepo
         {
             get { return _KeepCleanRepo; }
@@ -89,9 +91,10 @@ namespace AutoBuild
                 _KeepCleanRepo = value;
             }
         }
+        [Persistable]
         private bool _KeepCleanRepo;
 
-        [XmlElement]
+        [NotPersistable]
         public bool AllowConcurrentBuilds
         {
             get { return _AllowConcurrentBuilds; }
@@ -101,10 +104,10 @@ namespace AutoBuild
                 _AllowConcurrentBuilds = value;
             }
         }
+        [Persistable]
         private bool _AllowConcurrentBuilds;
 
-
-        [XmlElement]
+        [NotPersistable]
         public string RepoURL
         {
             get { return _RepoURL; }
@@ -114,9 +117,10 @@ namespace AutoBuild
                 _RepoURL = value;
             }
         }
+        [Persistable]
         private string _RepoURL;
 
-        [XmlElement] 
+        [NotPersistable]
         public string VersionControl
         {
             get { return _VersionControl; }
@@ -126,28 +130,29 @@ namespace AutoBuild
                 _VersionControl = value;
             }
         }
+        [Persistable]
         private string _VersionControl;
 
-        [XmlArray(IsNullable = false)] 
-        public ObservableCollection<string> WatchRefs;
+        [Persistable]
+        public ObservableCollection<string> WatchRefs { get; private set; }
 
-        [XmlArray(IsNullable = false)]
-        public XDictionary<string, CheckoutInfo> BuildCheckouts;
+        [Persistable]
+        public XDictionary<string, CheckoutInfo> BuildCheckouts { get; private set; }
 
-        [XmlElement]
-        public XDictionary<string, CommandScript> Commands;
+        [Persistable]
+        public XDictionary<string, CommandScript> Commands { get; private set; }
 
-        [XmlArray(IsNullable = false)]
-        public ObservableCollection<BuildTrigger> BuildTriggers;
+        [Persistable]
+        public ObservableCollection<BuildTrigger> BuildTriggers { get; private set; }
 
-        [XmlArray(IsNullable = false)]
-        public ObservableCollection<string> PreBuild;
+        [Persistable]
+        public ObservableCollection<string> PreBuild { get; private set; }
 
-        [XmlArray(IsNullable = false)]
-        public ObservableCollection<string> Build;
+        [Persistable]
+        public ObservableCollection<string> Build { get; private set; }
 
-        [XmlArray(IsNullable = false)]
-        public ObservableCollection<string> PostBuild;
+        [Persistable]
+        public ObservableCollection<string> PostBuild { get; private set; }
 
         private void ChangedEvent()
         {
@@ -258,6 +263,7 @@ namespace AutoBuild
             PostBuild.CollectionChanged += CollectionChanged;
         }
 
+/*
         //And a stream constructor in case I ever feel I need it.
         public ProjectData(Stream XMLinput) : this(FromXML(XMLinput))
         {
@@ -269,6 +275,6 @@ namespace AutoBuild
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;
         }
-
+*/
     }
 }

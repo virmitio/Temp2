@@ -4,6 +4,7 @@ using System.IO;
 using System.Xml.Serialization;
 using System.Collections.Generic;
 using CoApp.Toolkit.Collections;
+using CoApp.Toolkit.Extensions;
 
 namespace AutoBuild
 {
@@ -14,7 +15,8 @@ namespace AutoBuild
     {
         private const string DEFAULTROOT = @"C:\AutoBuild\Packages";
 
-        //XML Serialization methods
+#region XML Serialization methods
+        /*
         public string ToXML()
         {
             XmlSerializer S = new XmlSerializer(typeof(AutoBuild_config));
@@ -40,11 +42,13 @@ namespace AutoBuild
             XmlSerializer S = new XmlSerializer(typeof(AutoBuild_config));
             return (AutoBuild_config)S.Deserialize(XMLinput);
         }
+        */
+#endregion
 
         //Actual class data
         public event MasterConfigChangeHandler Changed;
 
-        [XmlElement]
+        [NotPersistable]
         public bool DefaultCleanRepo
         {
             get { return _DefaultCleanRepo; }
@@ -54,9 +58,10 @@ namespace AutoBuild
                 _DefaultCleanRepo = value;
             }
         }
+        [Persistable]
         private bool _DefaultCleanRepo;
 
-        [XmlElement]
+        [NotPersistable]
         public bool UseGithubListener
         {
             get { return _UseGithubListener; }
@@ -66,9 +71,10 @@ namespace AutoBuild
                 _UseGithubListener = value;
             }
         }
+        [Persistable]
         private bool _UseGithubListener;
 
-        [XmlElement]
+        [NotPersistable]
         public string ProjectRoot
         {
             get { return _ProjectRoot; }
@@ -78,9 +84,10 @@ namespace AutoBuild
                 _ProjectRoot = value;
             }
         }
+        [Persistable]
         private string _ProjectRoot;
 
-        [XmlElement]
+        [NotPersistable]
         public int MaxJobs
         {
             get { return _MaxJobs; }
@@ -90,19 +97,20 @@ namespace AutoBuild
                 _MaxJobs = value;
             }
         }
+        [Persistable]
         private int _MaxJobs;
         
 //        [XmlArray(IsNullable = false)]
-        [XmlElement]
-        public XDictionary<string, VersionControl> VersionControlList;
+        [Persistable]
+        public XDictionary<string, VersionControl> VersionControlList { get; private set; }
 
 //        [XmlArray(IsNullable = false)]
-        [XmlElement]
-        public XDictionary<string, List<string>> DefaultCommands;
+        [Persistable]
+        public XDictionary<string, List<string>> DefaultCommands { get; private set; }
 
 //        [XmlArray(IsNullable = false)]
-        [XmlElement]
-        public XDictionary<string, CommandScript> Commands;
+        [Persistable]
+        public XDictionary<string, CommandScript> Commands { get; private set; }
 
 
 
@@ -125,10 +133,6 @@ namespace AutoBuild
         {
             ChangedEvent();
         }
-
-
-
-
 
 
         //Default constructor.  Always good to have one of these.
@@ -163,6 +167,7 @@ namespace AutoBuild
             Commands.Changed += CommandsChanged;
         }
 
+/*
         //And a stream constructor in case I ever feel I need it.
         public AutoBuild_config(Stream XMLinput) : this(FromXML(XMLinput))
         {
@@ -170,6 +175,7 @@ namespace AutoBuild
             DefaultCommands.Changed += DefaultCommandsChanged;
             Commands.Changed += CommandsChanged;
         }
+*/
 
     }
 }

@@ -16,19 +16,15 @@
   */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
-using System.Management;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.IO.Pipes;
 using System.IO;
 using CoApp.Toolkit.Collections;
+using CoApp.Toolkit.Pipes;
 using Microsoft.Win32;
 
 namespace AutoBuild
@@ -43,6 +39,7 @@ namespace AutoBuild
 
     class AutoBuild : ServiceBase
     {
+        private static AutoBuild _instance;
         public static AutoBuild_config MasterConfig { get; private set; }
         public static XDictionary<string, ProjectData> Projects { get; private set; }
         private static Queue<string> WaitQueue;
@@ -68,9 +65,19 @@ namespace AutoBuild
             CanStop = true;
         }
 
+        public static AutoBuild Instance
+        {
+            get
+            {
+                _instance = _instance ?? new AutoBuild();
+                return _instance;
+            }
+        }
+
         static void Main()
         {
             AutoBuild Manager = new AutoBuild();
+            _instance = Manager;
             Manager.OnStart(new string[0]);
             ConsoleKeyInfo c = new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false);
             while (!(c.Key.Equals(ConsoleKey.Escape)))
@@ -102,6 +109,7 @@ namespace AutoBuild
         protected override void OnStart(string[] args)
         {
             base.OnStart(args);
+            _instance = this;
 
             // Always double-check that we have an actual thread to work with...
             InitWorld();
@@ -288,7 +296,8 @@ namespace AutoBuild
                     configfile = @"C:\AutoBuild\config.xml";
                     regKey.SetValue("ConfigFile", configfile);
                 }
-                MasterConfig = AutoBuild_config.FromXML(File.ReadAllText(configfile));
+                UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(configfile),Environment.NewLine);
+                UEM.DeserializeTo(MasterConfig);
                 MasterConfig.Changed += MasterChanged;
                 return true;
             }
@@ -321,7 +330,8 @@ namespace AutoBuild
                     throw new ArgumentException("Project not found: " + projectName);
 
                 string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
-                Projects[projectName] = ProjectData.FromXML(File.ReadAllText(file));
+                UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(file), Environment.NewLine);
+                UEM.DeserializeTo(Projects[projectName]);
                 Projects[projectName].SetName(projectName);
                 Projects[projectName].LoadHistory(Path.Combine(MasterConfig.ProjectRoot, projectName, "Log.xml"));
                 Projects[projectName].Changed2 += ProjectChanged;
@@ -354,7 +364,7 @@ namespace AutoBuild
                 }
                 if (!Directory.Exists(Path.GetDirectoryName(configfile)))
                     Directory.CreateDirectory(Path.GetDirectoryName(configfile));
-                File.WriteAllText(configfile, MasterConfig.ToXML());
+                File.WriteAllText(configfile, MasterConfig.Serialize(Environment.NewLine));
                 return true;
             }
             catch (Exception e)
@@ -383,8 +393,10 @@ namespace AutoBuild
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
 
-                File.WriteAllText(Path.Combine(path, "config.xml"), Projects[projectName].ToXML());
-                File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().ExportXml());
+//                File.WriteAllText(Path.Combine(path, "config.xml"), Projects[projectName].ToXML());
+//                File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().ExportXml());
+                File.WriteAllText(Path.Combine(path, "config.xml"), Projects[projectName].Serialize(Environment.NewLine));
+                File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().Serialize(Environment.NewLine));
                 
                 return true;
             }

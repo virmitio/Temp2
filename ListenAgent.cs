@@ -475,7 +475,7 @@ namespace AutoBuild
                                 project.VersionControl = "git";
 
                                 //Add the new project with the new ProjectInfo
-                                AutoBuild.AddProject(repository, project);
+                                AutoBuild.Instance.AddProject(repository, project);
 
                                 //Trigger the project now that it has been added
                                 AutoBuild.Trigger(repository);
