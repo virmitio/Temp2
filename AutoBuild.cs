@@ -401,12 +401,14 @@ namespace AutoBuild
             EventLog.WriteEntry(Message, EventType, ID, Category);
         }
 
-        public static void AddProject(string projectName, ProjectData project)
+        public void AddProject(string projectName, ProjectData project)
         {
             if (Projects.ContainsKey(projectName))
                 throw new ArgumentException("A project with this name already exists: " + projectName);
             Projects[projectName] = project;
             Projects[projectName].LoadHistory(new BuildHistory());
+            SaveProject(projectName); // save this so we don't run into other problems later
+            Projects[projectName].Changed2 += ProjectChanged;
             InitProject(projectName);
         }
 
