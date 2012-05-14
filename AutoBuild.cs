@@ -278,7 +278,7 @@ namespace AutoBuild
 
         /// <summary>
         /// Loads the master config file from disk.
-        /// This will first check for a registry key to locate the config.xml.
+        /// This will first check for a registry key to locate the config.conf.
         /// If the file cannot be opened or cannot be found, a default config will be loaded
         /// </summary>
         /// <returns>True if a config file was successfully loaded.  False if a default config had to be generated.</returns>
@@ -293,7 +293,7 @@ namespace AutoBuild
                 string configfile = (string)(regKey.GetValue("ConfigFile", null));
                 if (configfile == null)
                 {
-                    configfile = @"C:\AutoBuild\config.xml";
+                    configfile = @"C:\AutoBuild\config.conf";
                     regKey.SetValue("ConfigFile", configfile);
                 }
                 UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(configfile),Environment.NewLine);
@@ -329,7 +329,7 @@ namespace AutoBuild
                 if (!Projects.ContainsKey(projectName))
                     throw new ArgumentException("Project not found: " + projectName);
 
-                string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.xml");
+                string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.conf");
                 UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(file), Environment.NewLine);
                 UEM.DeserializeTo(Projects[projectName]);
                 Projects[projectName].SetName(projectName);
@@ -359,7 +359,7 @@ namespace AutoBuild
                 string configfile = (string)(regKey.GetValue("ConfigFile", null));
                 if (configfile == null)
                 {
-                    configfile = @"C:\AutoBuild\config.xml";
+                    configfile = @"C:\AutoBuild\config.conf";
                     regKey.SetValue("ConfigFile", configfile);
                 }
                 if (!Directory.Exists(Path.GetDirectoryName(configfile)))
@@ -393,9 +393,9 @@ namespace AutoBuild
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
 
-//                File.WriteAllText(Path.Combine(path, "config.xml"), Projects[projectName].ToXML());
+//                File.WriteAllText(Path.Combine(path, "config.conf"), Projects[projectName].ToXML());
 //                File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().ExportXml());
-                File.WriteAllText(Path.Combine(path, "config.xml"), Projects[projectName].Serialize(Environment.NewLine));
+                File.WriteAllText(Path.Combine(path, "config.conf"), Projects[projectName].Serialize(Environment.NewLine));
                 File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().Serialize(Environment.NewLine));
                 
                 return true;
