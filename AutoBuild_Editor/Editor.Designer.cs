@@ -1,4 +1,4 @@
-﻿namespace AutoBuild
+﻿namespace AutoBuilder
 {
     partial class Editor
     {
@@ -32,15 +32,15 @@
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.Split = new System.Windows.Forms.SplitContainer();
             this.ConfigTree = new System.Windows.Forms.TreeView();
             this.menuStrip1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
-            this.splitContainer1.Panel1.SuspendLayout();
-            this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.Split)).BeginInit();
+            this.Split.Panel1.SuspendLayout();
+            this.Split.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -68,45 +68,46 @@
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
             this.openToolStripMenuItem.Text = "Open...";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
             this.saveToolStripMenuItem.Text = "Save";
-            // 
-            // exitToolStripMenuItem
-            // 
-            this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.exitToolStripMenuItem.Text = "Exit";
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(149, 6);
+            this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // saveAsToolStripMenuItem
             // 
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
             this.saveAsToolStripMenuItem.Text = "Save As...";
             // 
-            // splitContainer1
+            // toolStripSeparator1
             // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 24);
-            this.splitContainer1.Name = "splitContainer1";
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(122, 6);
             // 
-            // splitContainer1.Panel1
+            // exitToolStripMenuItem
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.ConfigTree);
-            this.splitContainer1.Size = new System.Drawing.Size(549, 496);
-            this.splitContainer1.SplitterDistance = 183;
-            this.splitContainer1.TabIndex = 1;
+            this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
+            this.exitToolStripMenuItem.Text = "Exit";
+            // 
+            // Split
+            // 
+            this.Split.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.Split.Location = new System.Drawing.Point(0, 24);
+            this.Split.Name = "Split";
+            // 
+            // Split.Panel1
+            // 
+            this.Split.Panel1.Controls.Add(this.ConfigTree);
+            this.Split.Size = new System.Drawing.Size(549, 496);
+            this.Split.SplitterDistance = 183;
+            this.Split.TabIndex = 1;
             // 
             // ConfigTree
             // 
@@ -115,21 +116,22 @@
             this.ConfigTree.Name = "ConfigTree";
             this.ConfigTree.Size = new System.Drawing.Size(183, 496);
             this.ConfigTree.TabIndex = 0;
+            this.ConfigTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.ConfigTree_AfterSelect);
             // 
             // Editor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(549, 520);
-            this.Controls.Add(this.splitContainer1);
+            this.Controls.Add(this.Split);
             this.Controls.Add(this.menuStrip1);
             this.Name = "Editor";
             this.Text = "Editor";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
-            this.splitContainer1.Panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
-            this.splitContainer1.ResumeLayout(false);
+            this.Split.Panel1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.Split)).EndInit();
+            this.Split.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -142,7 +144,7 @@
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.SplitContainer Split;
         private System.Windows.Forms.TreeView ConfigTree;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem saveAsToolStripMenuItem;

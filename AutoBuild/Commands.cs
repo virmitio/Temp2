@@ -6,7 +6,7 @@ using System.Xml.Serialization;
 using CoApp.Toolkit.Collections;
 using CoApp.Toolkit.Extensions;
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     [XmlRoot(ElementName = "CommandScript", Namespace = "http://coapp.org/automation/build")]
     public class CommandScript
@@ -27,15 +27,14 @@ namespace AutoBuild
             Commands = new List<string>(lines);
         }
 
-        public int Run(string project, XDictionary<string, string> macros)
+        public int Run(string path, string project, XDictionary<string, string> macros)
         {
             ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
-            return Run(_cmdexe, project, macros);
+            return Run(_cmdexe, path, project, macros);
         }
 
-        public int Run(ProcessUtility exe, string project, XDictionary<string, string> macros)
+        public int Run(ProcessUtility exe, string path, string project, XDictionary<string, string> macros)
         {
-            string path = AutoBuild.MasterConfig.ProjectRoot + @"\" + project;
             // Reset my working directory.
             Environment.CurrentDirectory = path;
                 

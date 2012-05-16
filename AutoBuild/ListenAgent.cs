@@ -12,7 +12,7 @@ using CoApp.Toolkit.Tasks;
 using CoApp.Toolkit.Utility;
 using Newtonsoft.Json.Linq;
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     public class RequestHandler
     {

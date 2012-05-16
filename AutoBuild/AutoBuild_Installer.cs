@@ -19,7 +19,7 @@ using System.ComponentModel;
 using System.Configuration.Install;
 using System.ServiceProcess;
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     [RunInstaller(true)]
     class AutoBuild_Installer : Installer

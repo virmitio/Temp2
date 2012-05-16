@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using CoApp.Toolkit.Collections;
 using CoApp.Toolkit.Extensions;
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     public delegate void MasterConfigChangeHandler(AutoBuild_config sender);
 

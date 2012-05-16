@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using CoApp.Toolkit.Collections;
 using CoApp.Toolkit.Extensions;
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     public delegate void ProjectChangeHandler(ProjectData sender);
     public delegate void AltProjectChangeHandler(string sender);

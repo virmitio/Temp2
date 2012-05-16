@@ -27,7 +27,7 @@ using CoApp.Toolkit.Collections;
 using CoApp.Toolkit.Pipes;
 using Microsoft.Win32;
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     internal enum Errors
     {
@@ -36,9 +36,10 @@ namespace AutoBuild
 
     }
 
-
-    class AutoBuild : ServiceBase
+    public class AutoBuild : ServiceBase
     {
+        public static readonly string SerialSeperator = "\n";
+
         private static AutoBuild _instance;
         public static AutoBuild_config MasterConfig { get; private set; }
         public static XDictionary<string, ProjectData> Projects { get; private set; }
@@ -46,6 +47,15 @@ namespace AutoBuild
         private static List<string> Running;
         private static int CurrentJobs;
         public static List<Daemon> Daemons;
+
+        public static AutoBuild Instance
+        {
+            get
+            {
+                _instance = _instance ?? new AutoBuild();
+                return _instance;
+            }
+        }
 
         public AutoBuild()
         {
@@ -65,19 +75,9 @@ namespace AutoBuild
             CanStop = true;
         }
 
-        public static AutoBuild Instance
-        {
-            get
-            {
-                _instance = _instance ?? new AutoBuild();
-                return _instance;
-            }
-        }
-
         static void Main()
         {
-            AutoBuild Manager = new AutoBuild();
-            _instance = Manager;
+            AutoBuild Manager = AutoBuild.Instance;
             Manager.OnStart(new string[0]);
             ConsoleKeyInfo c = new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false);
             while (!(c.Key.Equals(ConsoleKey.Escape)))
@@ -296,7 +296,7 @@ namespace AutoBuild
                     configfile = @"C:\AutoBuild\config.conf";
                     regKey.SetValue("ConfigFile", configfile);
                 }
-                UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(configfile),Environment.NewLine);
+                UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(configfile), AutoBuild.SerialSeperator, true);
                 UEM.DeserializeTo(MasterConfig);
                 MasterConfig.Changed += MasterChanged;
                 return true;
@@ -330,10 +330,10 @@ namespace AutoBuild
                     throw new ArgumentException("Project not found: " + projectName);
 
                 string file = Path.Combine(MasterConfig.ProjectRoot, projectName, "config.conf");
-                UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(file), Environment.NewLine);
+                UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(file), AutoBuild.SerialSeperator, true);
                 UEM.DeserializeTo(Projects[projectName]);
                 Projects[projectName].SetName(projectName);
-                Projects[projectName].LoadHistory(Path.Combine(MasterConfig.ProjectRoot, projectName, "Log.xml"));
+                Projects[projectName].LoadHistory(Path.Combine(MasterConfig.ProjectRoot, projectName, "Log.log"));
                 Projects[projectName].Changed2 += ProjectChanged;
                 return true;
             }
@@ -364,7 +364,7 @@ namespace AutoBuild
                 }
                 if (!Directory.Exists(Path.GetDirectoryName(configfile)))
                     Directory.CreateDirectory(Path.GetDirectoryName(configfile));
-                File.WriteAllText(configfile, MasterConfig.Serialize(Environment.NewLine));
+                File.WriteAllText(configfile, MasterConfig.Serialize(AutoBuild.SerialSeperator, true));
                 return true;
             }
             catch (Exception e)
@@ -395,8 +395,8 @@ namespace AutoBuild
 
 //                File.WriteAllText(Path.Combine(path, "config.conf"), Projects[projectName].ToXML());
 //                File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().ExportXml());
-                File.WriteAllText(Path.Combine(path, "config.conf"), Projects[projectName].Serialize(Environment.NewLine));
-                File.WriteAllText(Path.Combine(path, "log.xml"), Projects[projectName].GetHistory().Serialize(Environment.NewLine));
+                File.WriteAllText(Path.Combine(path, "config.conf"), Projects[projectName].Serialize(AutoBuild.SerialSeperator, true));
+                File.WriteAllText(Path.Combine(path, "log.log"), Projects[projectName].GetHistory().Serialize(AutoBuild.SerialSeperator, true));
                 
                 return true;
             }
@@ -565,7 +565,9 @@ namespace AutoBuild
                     return (int)Errors.NoCommand;
                 }
 
-                int retVal = tmp.Run(_cmdexe, projectName, new XDictionary<string, string>(Macros));
+                string rootPath = MasterConfig.ProjectRoot + @"\" + projectName;
+
+                int retVal = tmp.Run(_cmdexe, rootPath, projectName, new XDictionary<string, string>(Macros));
                 status.Append(_cmdexe.StandardOut);
                 if (retVal != 0)
                     return retVal;

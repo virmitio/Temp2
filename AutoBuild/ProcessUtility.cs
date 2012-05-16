@@ -11,7 +11,7 @@ using System.Threading;
 using CoApp.Toolkit.Extensions;
 using CoApp.Toolkit.Win32;
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     /// <summary>
     /// Wraps a Windows process

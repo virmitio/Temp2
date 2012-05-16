@@ -7,7 +7,7 @@ using System.Xml.Serialization;
 using CoApp.Toolkit.Collections;
 
 
-namespace AutoBuild
+namespace AutoBuilder
 {
     [XmlRoot(ElementName = "Tool", Namespace = "http://coapp.org/automation/build")]
     public class Tool
