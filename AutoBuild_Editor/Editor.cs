@@ -51,24 +51,36 @@ namespace AutoBuilder
 
             var data = current.Tag;
             
+            if (data is string || data is int || data is bool)
+            {
+                return;
+            }
             
             // Run once through for fields...
             var fields = data.GetType().GetFields(DefaultBF);
             foreach (var info in fields)
             {
                 var each = info.GetValue(data);
+                TreeNode node = new TreeNode(info.Name);
+                node.Tag = each;
+
                 if (each is IEnumerable &&
                     !(each is String))
                 {
-                    TreeNode node = new TreeNode(info.Name);
-                    node.Tag = each;
-
-                    foreach (var item in (IEnumerable)each)
-                    {
-                        node.AddChild(item.GetType().ToString(), item);
-                    }
-                    current.AddChild(node);
+                    if (each is IDictionary)
+                        foreach (var item in ((IDictionary)each).Keys)
+                        {
+                            node.AddChild(item.ToString(), ((IDictionary)each)[item]);
+                        }
+                    else
+                        foreach (var item in (IEnumerable)each)
+                        {
+                            node.AddChild(item.GetType().Name, item);
+                        }
                 }
+                if (each is string || each is int || each is bool)
+                    continue;
+                current.AddChild(node);
             }
 
             // ... and once through for properties.
@@ -76,18 +88,26 @@ namespace AutoBuilder
             foreach (var info in props)
             {
                 var each = info.GetValue(data, null);
+                TreeNode node = new TreeNode(info.Name);
+                node.Tag = each;
+
                 if (each is IEnumerable &&
                     !(each is String))
                 {
-                    TreeNode node = new TreeNode(info.Name);
-                    node.Tag = each;
-
-                    foreach (var item in (IEnumerable)each)
+                    if (each is IDictionary)
+                        foreach (var item in ((IDictionary)each).Keys)
+                        {
+                            node.AddChild(item.ToString(), ((IDictionary)each)[item]);
+                        }
+                    else
+                        foreach (var item in (IEnumerable)each)
                     {
-                        node.AddChild(item.GetType().ToString(), item);
+                        node.AddChild(item.GetType().Name, item);
                     }
-                    current.AddChild(node);
                 }
+                if (each is string || each is int || each is bool)
+                    continue;
+                current.AddChild(node);
             }
 
             // repeat for the child objects
@@ -152,19 +172,19 @@ namespace AutoBuilder
                 if (UEM["$T$"].Contains("AutoBuild_config"))
                 {
                     var input = UEM.DeserializeTo<AutoBuild_config>();
-                    top = new TreeNode(input.GetType().ToString());
+                    top = new TreeNode(input.GetType().Name);
                     top.Tag = input;
                 }
                 else if (UEM["$T$"].Contains("ProjectData"))
                 {
                     var input = UEM.DeserializeTo<ProjectData>();
-                    top = new TreeNode(input.GetType().ToString());
+                    top = new TreeNode(input.GetType().Name);
                     top.Tag = input;
                 }
                 else
                 {
                     var input = UEM.DeserializeTo<Object>();
-                    top = new TreeNode(input.GetType().ToString());
+                    top = new TreeNode(input.GetType().Name);
                     top.Tag = input;
                 }
 
@@ -181,10 +201,10 @@ namespace AutoBuilder
         {
             try
             {
-                TreeNode root = ConfigTree.Nodes[RootNodeName];
+                TreeNode root = ConfigTree.SelectedNode.Root();
                 string filename = (string)(root.Tag);
-                NodeData data = (NodeData)(root.FirstNode.Tag);
-                File.WriteAllText(filename, data.data.Serialize(AutoBuild.SerialSeperator, true));
+                var data = (root.FirstNode.Tag);
+                File.WriteAllText(filename, data.Serialize(AutoBuild.SerialSeperator, true));
             }
             catch (Exception E)
             {
@@ -195,12 +215,144 @@ namespace AutoBuilder
         private void ConfigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             ClearControls();
-            var data = ConfigTree.SelectedNode;
+            var data = ConfigTree.SelectedNode.Tag;
 
+
+
+            Action<bool, GroupBox, Action<bool>> boolMaker = (init, parent, func) =>
+                                                                  {
+                                                                      var bTrue = new RadioButton();
+                                                                      var bFalse = new RadioButton();
+
+                                                                      bTrue.Name = "bTrue";
+                                                                      bTrue.Location = new Point(6, 20);
+                                                                      bTrue.TabIndex = 0;
+                                                                      bTrue.TabStop = true;
+                                                                      bTrue.Text = "True";
+                                                                      bTrue.Size = new Size(47, 17);
+                                                                      bTrue.CheckedChanged +=
+                                                                          (o, eArgs) =>
+                                                                              { if (bTrue.Checked) func(true); };
+
+
+                                                                      bFalse.Name = "bFalse";
+                                                                      bFalse.Location = new Point(60, 20);
+                                                                      bFalse.TabIndex = 1;
+                                                                      bFalse.TabStop = true;
+                                                                      bFalse.Text = "False";
+                                                                      bFalse.Size = new Size(50, 17);
+                                                                      bFalse.CheckedChanged +=
+                                                                          (o, eArgs) =>
+                                                                              { if (bFalse.Checked) func(false); };
+
+                                                                      if (init)
+                                                                      {
+                                                                          bTrue.Checked = true;
+                                                                          bFalse.Checked = false;
+                                                                      }
+                                                                      else
+                                                                      {
+                                                                          bTrue.Checked = false;
+                                                                          bFalse.Checked = true;
+                                                                      }
+
+                                                                      parent.Controls.Add(bTrue);
+                                                                      parent.Controls.Add(bFalse);
+                                                                      parent.Size = new Size(120, 42);
+
+                                                                  };
+
+
+            Action<int, GroupBox, Action<int>> intMaker = (init, parent, func) =>
+                                                               {
+                                                                   var spinner = new NumericUpDown();
+
+                                                                   Action<bool> change = fromText =>
+                                                                   {
+                                                                       int val;
+                                                                       if (fromText)
+                                                                       {
+                                                                           if (int.TryParse(spinner.Text, out val))
+                                                                               func(val);
+                                                                       }
+                                                                       else
+                                                                       {
+                                                                           val = Decimal.ToInt32(spinner.Value);
+                                                                           func(val);
+                                                                       }
+                                                                   };
+                                                                   spinner.TabIndex = 0;
+                                                                   spinner.TabStop = true;
+                                                                   spinner.Value = init;
+                                                                   spinner.Text = init.ToString();
+                                                                   spinner.ValueChanged += (o, eArgs) => change(false);
+                                                                   spinner.TextChanged += (o, eArgs) => change(true);
+                                                                   spinner.Location = new Point(6, 20);
+                                                                   spinner.Size = new Size(60, 20);
+
+                                                                   parent.Controls.Add(spinner);
+                                                                   parent.Size = new Size(74, 45);
+                                                               };
+
+
+            Action<string , GroupBox, Action<string >> stringMaker = (init, parent, func) =>
+                                                              {
+                                                                  var text = new TextBox();
+                                                                  text.Multiline = true;
+                                                                  text.AcceptsReturn = true;
+                                                                  text.AcceptsTab = true;
+                                                                  text.Text = init;
+                                                                  text.TabIndex = 0;
+                                                                  text.TabStop = true;
+                                                                  text.Size = new Size(180, 40);
+                                                                  text.Location = new Point(6, 20);
+                                                                  text.TextChanged += (o, eArgs) => func(text.Text);
+                                                                  parent.Size = new Size(190, 65);
+                                                                  parent.Controls.Add(text);
+                                                              };
+
+
+            if (data is string)
+            {
+                var C = new GroupBox();
+                C.Name = ConfigTree.SelectedNode.Text;
+                C.Text = C.Name;
+                C.TabStop = false;
+
+                Action<string> setText = T => data = T;
+                stringMaker((string) data, C, setText);
+                AddControl(C);
+            }
+            else if (data is int)
+            {
+                var C = new GroupBox();
+                C.Name = ConfigTree.SelectedNode.Text;
+                C.Text = C.Name;
+                C.TabStop = false;
+
+                Action<int> setInt = input => data = input;
+                intMaker((int) data, C, setInt);
+                AddControl(C);
+            }
+            else if (data is bool)
+            {
+                var C = new GroupBox();
+                C.Name = ConfigTree.SelectedNode.Text;
+                C.Text = C.Name;
+                C.TabStop = false;
+
+                Action<bool> change = newVal => data = newVal;
+                boolMaker((bool) data, C, change);
+                AddControl(C);
+            }
+            if (data is bool || data is int || data is string || data is IEnumerable)
+                return;
+            
             // Run once through for fields...
             var fields = data.GetType().GetFields(DefaultBF);
             foreach (var info in fields)
             {
+                var localInfo = info;
                 var each = info.GetValue(data);
                 if (each is IEnumerable && !(each is String))
                 { continue; }
@@ -213,90 +365,26 @@ namespace AutoBuilder
                 //I haven't found a way to do this as a switch statement yet...
                 if (each is bool)
                 {
-                    Action<bool> change =  (newVal) => info.SetValue(data, newVal);
+                    Action<bool> change = newVal => localInfo.SetValue(data, newVal);
 
-                    var bTrue = new RadioButton();
-                    var bFalse = new RadioButton();
-
-                    bTrue.Name = "bTrue";
-                    bTrue.Location = new Point(6, 20);
-                    bTrue.TabIndex = 0;
-                    bTrue.TabStop = true;
-                    bTrue.Text = "True";
-                    bTrue.Size = new Size(47, 17);
-                    bTrue.CheckedChanged += (o, eArgs) => { if (bTrue.Checked) change(true); };
-
-
-                    bFalse.Name = "bFalse";
-                    bFalse.Location = new Point(60, 20);
-                    bFalse.TabIndex = 1;
-                    bFalse.TabStop = true;
-                    bFalse.Text = "False";
-                    bFalse.Size = new Size(50, 17);
-                    bFalse.CheckedChanged += (o, eArgs) => { if (bFalse.Checked) change(false); };
-                    
-                    if ((bool)each)
-                    {
-                        bTrue.Checked = true;
-                        bFalse.Checked = false;
-                    }
-                    else
-                    {
-                        bTrue.Checked = false;
-                        bFalse.Checked = true;
-                    }
-
-                    C.Controls.Add(bTrue);
-                    C.Controls.Add(bFalse);
-                    C.Size = new Size(120, 42);
-
+                    boolMaker((bool) each, C, change);
                 }
                 else if (each is int)
                 {
-                    var spinner = new NumericUpDown();
+                    Action<int> setInt = input => localInfo.SetValue(data, input);
 
-                    Action<bool> change = (fromText) =>
-                                                           {
-                                                               int val;
-                                                               if (fromText)
-                                                               {
-                                                                   if (int.TryParse(spinner.Text, out val))
-                                                                       info.SetValue(data, val);
-                                                               }
-                                                               else
-                                                               {
-                                                                   val = Decimal.ToInt32(spinner.Value);
-                                                                   info.SetValue(data, val);
-                                                               }
-                                                           };
-                    spinner.TabIndex = 0;
-                    spinner.TabStop = true;
-                    spinner.Value = (decimal) each;
-                    spinner.Text = ((int)each).ToString();
-                    spinner.ValueChanged += (o, eArgs) => change(false);
-                    spinner.TextChanged += (o, eArgs) => change(true);
-                    spinner.Location = new Point(6, 20);
-                    spinner.Size = new Size(60, 20);
-                    C.Controls.Add(spinner);
-                    C.Size = new Size(74, 45);
+                    intMaker((int) each, C, setInt);
                 }
-                else if (each is __)
+                else if (each is string)
                 {
+                    Action<string> setText = T => localInfo.SetValue(data, T);
 
+                    stringMaker((string) each, C, setText);
                 }
-                else if (each is __)
+                else
                 {
-
+                    continue;
                 }
-                else if (each is __)
-                {
-
-                }
-                else if (each is __)
-                {
-
-                }
-
 
                 AddControl(C);
             }
@@ -305,16 +393,114 @@ namespace AutoBuilder
             var props = data.GetType().GetProperties(DefaultBF);
             foreach (var info in props)
             {
+                var localInfo = info;
                 var each = info.GetValue(data, null);
                 if (each is IEnumerable && !(each is String))
                 { continue; }
 
+                var C = new GroupBox();
+                C.Name = info.Name;
+                C.Text = info.Name;
+                C.TabStop = false;
 
+                //I haven't found a way to do this as a switch statement yet...
+                if (each is bool)
+                {
+                    Action<bool> change = newVal => localInfo.SetValue(data, newVal, null);
 
+                    boolMaker((bool)each, C, change);
+                }
+                else if (each is int)
+                {
+                    Action<int> setInt = input => localInfo.SetValue(data, input, null);
+
+                    intMaker((int)each, C, setInt);
+                }
+                else if (each is string)
+                {
+                    Action<string> setText = T => localInfo.SetValue(data, T, null);
+
+                    stringMaker((string)each, C, setText);
+                }
+                else
+                {
+                    continue;
+                }
+
+                AddControl(C);
             }
-
 
         }
 
+        private void ConfigTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                ConfigTree.SelectedNode = ConfigTree.GetNodeAt(e.X, e.Y);
+                var node = ConfigTree.SelectedNode.Tag;
+                
+                if (node is IEnumerable && !(node is string))
+                    RightClick_NodeMenu.Items["newToolStripMenuItem"].Enabled = true;
+                else
+                    RightClick_NodeMenu.Items["newToolStripMenuItem"].Enabled = false;
+
+                var parent = ConfigTree.SelectedNode.Parent.Tag;
+                if (parent is IEnumerable && !(parent is string))
+                    RightClick_NodeMenu.Items["removeToolStripMenuItem"].Enabled = false;
+                else
+                    RightClick_NodeMenu.Items["removeToolStripMenuItem"].Enabled = false;
+
+                RightClick_NodeMenu.Show(ConfigTree, e.Location);
+            }
+        }
+
+        private void newToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var node = ConfigTree.SelectedNode.Tag;
+
+            
+
+            if (node is IDictionary)
+            {
+                Type[] types = node.GetType().GetGenericArguments();
+                var newobj = Activator.CreateInstance(types[1], true);
+
+                EditorUtil.FillObject(newobj);
+
+                string keyName = PromptDialog.Show("New key:") ?? String.Empty;
+                if (keyName.Length == 0)
+                    return;
+
+                var key = Convert.ChangeType(keyName, types[0]);
+                ((IDictionary)node).Add(key, newobj);
+
+                TreeNode N = new TreeNode(keyName);
+                N.Tag = newobj;
+                ConfigTree.SelectedNode.AddChild(N);
+                FillData(N);
+            }
+            else
+            {
+                
+                //node should be castable to a list
+                Type T = node.GetType().GetGenericArguments()[0];
+                var newobj = Activator.CreateInstance(T, true);
+                
+                EditorUtil.FillObject(newobj);
+                
+                ((IList)node).Add(newobj);
+                TreeNode N = new TreeNode(T.Name);
+                N.Tag = newobj;
+                ConfigTree.SelectedNode.AddChild(N);
+                FillData(N);
+            }
+
+            
+        }
+
+        private void removeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

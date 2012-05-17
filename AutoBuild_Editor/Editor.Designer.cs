@@ -1,4 +1,6 @@
-﻿namespace AutoBuilder
+﻿using System.Windows.Forms;
+
+namespace AutoBuilder
 {
     partial class Editor
     {
@@ -28,6 +30,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -37,10 +40,14 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.Split = new System.Windows.Forms.SplitContainer();
             this.ConfigTree = new System.Windows.Forms.TreeView();
+            this.RightClick_NodeMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.removeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Split)).BeginInit();
             this.Split.Panel1.SuspendLayout();
             this.Split.SuspendLayout();
+            this.RightClick_NodeMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -117,6 +124,29 @@
             this.ConfigTree.Size = new System.Drawing.Size(183, 496);
             this.ConfigTree.TabIndex = 0;
             this.ConfigTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.ConfigTree_AfterSelect);
+            this.ConfigTree.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.ConfigTree_NodeMouseClick);
+            // 
+            // RightClick_NodeMenu
+            // 
+            this.RightClick_NodeMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.removeToolStripMenuItem,
+            this.newToolStripMenuItem});
+            this.RightClick_NodeMenu.Name = "RightClick_NodeMenu";
+            this.RightClick_NodeMenu.Size = new System.Drawing.Size(153, 70);
+            // 
+            // removeToolStripMenuItem
+            // 
+            this.removeToolStripMenuItem.Name = "removeToolStripMenuItem";
+            this.removeToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.removeToolStripMenuItem.Text = "Remove";
+            this.removeToolStripMenuItem.Click += new System.EventHandler(this.removeToolStripMenuItem_Click);
+            // 
+            // newToolStripMenuItem
+            // 
+            this.newToolStripMenuItem.Name = "newToolStripMenuItem";
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.newToolStripMenuItem.Text = "New";
+            this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
             // 
             // Editor
             // 
@@ -132,6 +162,7 @@
             this.Split.Panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.Split)).EndInit();
             this.Split.ResumeLayout(false);
+            this.RightClick_NodeMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -148,6 +179,9 @@
         private System.Windows.Forms.TreeView ConfigTree;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem saveAsToolStripMenuItem;
+        private ContextMenuStrip RightClick_NodeMenu;
+        private ToolStripMenuItem removeToolStripMenuItem;
+        private ToolStripMenuItem newToolStripMenuItem;
 
     }
 }

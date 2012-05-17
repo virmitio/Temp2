@@ -28,8 +28,12 @@ namespace AutoBuilder
             Switches = switches;
         }
 
-        private Tool()
-        {}
+        protected Tool()
+        {
+            Name = String.Empty;
+            Path = String.Empty;
+            Switches =  new string[0];
+        }
     }
 
     [XmlRoot(ElementName = "VersionControl", Namespace = "http://coapp.org/automation/build")]
@@ -53,8 +57,12 @@ namespace AutoBuilder
                               : new XDictionary<string, object>(properties);
         }
 
-        private VersionControl()
-        {}
+        protected VersionControl()
+        {
+            Name = String.Empty;
+            Tool = (Tool)Activator.CreateInstance(typeof(Tool), true);
+            Properties = new XDictionary<string, object>();
+        }
     }
 
     [XmlRoot(ElementName = "BuildTrigger", Namespace = "http://coapp.org/automation/build")]

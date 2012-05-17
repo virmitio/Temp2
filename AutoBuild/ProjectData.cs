@@ -78,7 +78,7 @@ namespace AutoBuilder
                 _Enabled = value;
             }
         }
-        [Persistable]
+        [Persistable(null)]
         private bool _Enabled;
 
         [NotPersistable]
@@ -91,7 +91,7 @@ namespace AutoBuilder
                 _KeepCleanRepo = value;
             }
         }
-        [Persistable]
+        [Persistable(null)]
         private bool _KeepCleanRepo;
 
         [NotPersistable]
@@ -104,7 +104,7 @@ namespace AutoBuilder
                 _AllowConcurrentBuilds = value;
             }
         }
-        [Persistable]
+        [Persistable(null)]
         private bool _AllowConcurrentBuilds;
 
         [NotPersistable]
@@ -117,7 +117,7 @@ namespace AutoBuilder
                 _RepoURL = value;
             }
         }
-        [Persistable]
+        [Persistable(null)]
         private string _RepoURL;
 
         [NotPersistable]
@@ -130,28 +130,28 @@ namespace AutoBuilder
                 _VersionControl = value;
             }
         }
-        [Persistable]
+        [Persistable(null)]
         private string _VersionControl;
 
-        [Persistable]
+        [Persistable()]
         public ObservableCollection<string> WatchRefs { get; private set; }
 
-        [Persistable]
+        [Persistable(null)]
         public XDictionary<string, CheckoutInfo> BuildCheckouts { get; private set; }
 
-        [Persistable]
+        [Persistable(null)]
         public XDictionary<string, CommandScript> Commands { get; private set; }
 
-        [Persistable]
+        [Persistable(null)]
         public ObservableCollection<BuildTrigger> BuildTriggers { get; private set; }
 
-        [Persistable]
+        [Persistable(null)]
         public ObservableCollection<string> PreBuild { get; private set; }
 
-        [Persistable]
+        [Persistable(null)]
         public ObservableCollection<string> Build { get; private set; }
 
-        [Persistable]
+        [Persistable(null)]
         public ObservableCollection<string> PostBuild { get; private set; }
 
         private void ChangedEvent()
