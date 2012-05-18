@@ -58,7 +58,7 @@ namespace AutoBuilder
                 _DefaultCleanRepo = value;
             }
         }
-        [Persistable(null)]
+        [Persistable]
         private bool _DefaultCleanRepo;
 
         [NotPersistable]
@@ -71,7 +71,7 @@ namespace AutoBuilder
                 _UseGithubListener = value;
             }
         }
-        [Persistable(null)]
+        [Persistable]
         private bool _UseGithubListener;
 
         [NotPersistable]
@@ -84,7 +84,7 @@ namespace AutoBuilder
                 _ProjectRoot = value;
             }
         }
-        [Persistable(null)]
+        [Persistable]
         private string _ProjectRoot;
 
         [NotPersistable]
@@ -97,19 +97,19 @@ namespace AutoBuilder
                 _MaxJobs = value;
             }
         }
-        [Persistable(null)]
+        [Persistable]
         private int _MaxJobs;
         
 //        [XmlArray(IsNullable = false)]
-        [Persistable(null)]
+        [Persistable]
         public XDictionary<string, VersionControl> VersionControlList { get; private set; }
 
 //        [XmlArray(IsNullable = false)]
-        [Persistable(null)]
+        [Persistable]
         public XDictionary<string, List<string>> DefaultCommands { get; private set; }
 
 //        [XmlArray(IsNullable = false)]
-        [Persistable(null)]
+        [Persistable]
         public XDictionary<string, CommandScript> Commands { get; private set; }
 
 

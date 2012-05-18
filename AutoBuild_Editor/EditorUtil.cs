@@ -6,17 +6,6 @@ using System.Windows.Forms;
 
 namespace AutoBuilder
 {
-    internal class NodeData
-    {
-        public Type type;
-        public object data;
-
-        public NodeData(Type T, object Data)
-        {
-            type = T;
-            data = Data;
-        }
-    }
 
     internal static class NodeExtensions
     {
