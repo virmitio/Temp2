@@ -55,7 +55,26 @@ namespace AutoBuilder
             {
                 return;
             }
-            
+
+            if (data is IEnumerable &&
+                    !(data is String))
+            {
+                if (data is IDictionary)
+                    foreach (var item in ((IDictionary)data).Keys)
+                    {
+                        current.AddChild(item.ToString(), ((IDictionary)data)[item]);
+                    }
+                else
+                {
+                    IList list = ((IEnumerable)data).EnumToArray();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        current.AddChild(i.ToString(), list[i]);
+                    }
+                }
+                return;
+            }
+
             // Run once through for fields...
             var fields = data.GetType().GetFields(DefaultBF);
             foreach (var info in fields)

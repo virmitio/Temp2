@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -24,6 +25,38 @@ namespace AutoBuilder
         internal static TreeNode Root(this TreeNode child)
         {
             return child.Parent == null ? child : child.Parent.Root();
+        }
+    }
+
+    internal static class IEnumerableExtensions
+    {
+        internal static IList EnumToArray(this IEnumerable input)
+        {
+            Type T;
+            object item;
+            
+            var E = input.GetEnumerator();
+            E.Reset();
+            
+            if (E.MoveNext())
+            {
+                item = E.Current;
+                T = item.GetType();
+            }
+            else if (input.GetType().IsGenericType)
+            {
+                item = null;
+                Type[] types = input.GetType().GetGenericArguments();
+                T = types[0];
+            }
+            else
+            {
+                item = null;
+                T = typeof(object);
+            }
+
+            IList lst = (IList)Activator.CreateInstance((typeof(List<>).MakeGenericType(T)), new object[] {input});
+            return lst;
         }
     }
 
