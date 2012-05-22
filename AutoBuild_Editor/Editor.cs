@@ -87,7 +87,17 @@ namespace AutoBuilder
             var props = data.GetType().GetProperties(DefaultBF);
             foreach (var info in props)
             {
-                var each = info.GetValue(data, null);
+                var para = info.GetIndexParameters();
+                object[] arr;
+                if (para.Length == 0)
+                    arr = null;
+                else
+                {
+                    arr = new object[para.Length];
+                    for (int p = 0; p < para.Length; p++)
+                        arr[p] = null;
+                }
+                var each = info.GetValue(data, arr);
                 TreeNode node = new TreeNode(info.Name);
                 node.Tag = each;
 
@@ -169,13 +179,13 @@ namespace AutoBuilder
 
                 TreeNode top;
 
-                if (UEM["$T$"].Contains("AutoBuild_config"))
+                if (UEM[".$T$"].Contains("AutoBuild_config"))
                 {
                     var input = UEM.DeserializeTo<AutoBuild_config>();
                     top = new TreeNode(input.GetType().Name);
                     top.Tag = input;
                 }
-                else if (UEM["$T$"].Contains("ProjectData"))
+                else if (UEM[".$T$"].Contains("ProjectData"))
                 {
                     var input = UEM.DeserializeTo<ProjectData>();
                     top = new TreeNode(input.GetType().Name);
@@ -183,7 +193,9 @@ namespace AutoBuilder
                 }
                 else
                 {
-                    var input = UEM.DeserializeTo<Object>();
+                    Type type = Type.GetType(UEM[".$T$"]);
+                    var obj = Activator.CreateInstance(type, true);
+                    var input = UEM.DeserializeTo(obj);
                     top = new TreeNode(input.GetType().Name);
                     top.Tag = input;
                 }
@@ -446,7 +458,7 @@ namespace AutoBuilder
 
                 var parent = ConfigTree.SelectedNode.Parent.Tag;
                 if (parent is IEnumerable && !(parent is string))
-                    RightClick_NodeMenu.Items["removeToolStripMenuItem"].Enabled = false;
+                    RightClick_NodeMenu.Items["removeToolStripMenuItem"].Enabled = true;
                 else
                     RightClick_NodeMenu.Items["removeToolStripMenuItem"].Enabled = false;
 
@@ -463,7 +475,11 @@ namespace AutoBuilder
             if (node is IDictionary)
             {
                 Type[] types = node.GetType().GetGenericArguments();
-                var newobj = Activator.CreateInstance(types[1], true);
+                object newobj;
+                if (types[1] == typeof(String))
+                    newobj = String.Empty;
+                else
+                    newobj = Activator.CreateInstance(types[1], true);
 
                 EditorUtil.FillObject(newobj);
 
@@ -474,25 +490,41 @@ namespace AutoBuilder
                 var key = Convert.ChangeType(keyName, types[0]);
                 ((IDictionary)node).Add(key, newobj);
 
+                /*
+                ConfigTree.SelectedNode.Nodes.Clear();
+                FillData(ConfigTree.SelectedNode);
+                */
+                
                 TreeNode N = new TreeNode(keyName);
                 N.Tag = newobj;
                 ConfigTree.SelectedNode.AddChild(N);
                 FillData(N);
+                
             }
             else
             {
                 
                 //node should be castable to a list
                 Type T = node.GetType().GetGenericArguments()[0];
-                var newobj = Activator.CreateInstance(T, true);
+                object newobj; 
+                if (T == typeof(String))
+                    newobj = String.Empty;
+                else
+                    newobj = Activator.CreateInstance(T, true);
                 
                 EditorUtil.FillObject(newobj);
                 
                 ((IList)node).Add(newobj);
+
+                ConfigTree.SelectedNode.Nodes.Clear();
+                FillData(ConfigTree.SelectedNode);
+
+                /*
                 TreeNode N = new TreeNode(T.Name);
                 N.Tag = newobj;
                 ConfigTree.SelectedNode.AddChild(N);
                 FillData(N);
+                */
             }
 
             

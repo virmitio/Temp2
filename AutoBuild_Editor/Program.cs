@@ -15,7 +15,8 @@ namespace AutoBuilder
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Editor());
+            var ed = new Editor();
+            Application.Run(ed);
         }
     }
 }
