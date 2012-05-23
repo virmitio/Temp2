@@ -18,11 +18,7 @@ namespace AutoBuilder
         {
             Commands = new List<string>();
         }
-        public CommandScript(string name)
-        {
-            Commands = new List<string>();
-        }
-        public CommandScript(string name, IEnumerable<string> lines)
+        public CommandScript(IEnumerable<string> lines)
         {
             Commands = new List<string>(lines);
         }

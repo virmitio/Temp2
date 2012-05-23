@@ -83,9 +83,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AutoBuild\AutoBuild_dll.csproj">
-      <Project>{B87AB68B-1926-4157-BFE1-09A20AC446E0}</Project>
-      <Name>AutoBuild_dll</Name>
+    <ProjectReference Include="..\AutoBuild\AutoBuild.csproj">
+      <Project>{748BA513-375C-4B0C-959D-D598C007B308}</Project>
+      <Name>AutoBuild</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

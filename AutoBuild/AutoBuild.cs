@@ -188,6 +188,10 @@ namespace AutoBuilder
                     LoadProject(child.Name);
                 }
             }
+            else
+            {
+                Directory.CreateDirectory(ProjectRoot.ToString());
+            }
             //-initialize listeners
             foreach (string name in Projects.Keys)
             {
@@ -566,6 +570,7 @@ namespace AutoBuilder
                 }
 
                 string rootPath = MasterConfig.ProjectRoot + @"\" + projectName;
+                Macros["projectroot"] = rootPath;
 
                 int retVal = tmp.Run(_cmdexe, rootPath, projectName, new XDictionary<string, string>(Macros));
                 status.Append(_cmdexe.StandardOut);

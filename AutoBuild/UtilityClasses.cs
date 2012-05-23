@@ -44,24 +44,24 @@ namespace AutoBuilder
         [XmlElement]
         public Tool Tool;
         [XmlElement]
-        public XDictionary<string, object> Properties;
+        public XDictionary<string, string> Properties;
 
-        public VersionControl(string name, Tool tool = null, IDictionary<string,object> properties = null)
+        public VersionControl(string name, Tool tool = null, IDictionary<string,string> properties = null)
         {
             if (name == null)
                 throw new ArgumentNullException("name", "VersionControl.Name cannot be null.");
             Name = name;
             Tool = tool;
             Properties = properties == null
-                              ? new XDictionary<string, object>()
-                              : new XDictionary<string, object>(properties);
+                              ? new XDictionary<string, string>()
+                              : new XDictionary<string, string>(properties);
         }
 
         protected VersionControl()
         {
             Name = String.Empty;
             Tool = (Tool)Activator.CreateInstance(typeof(Tool), true);
-            Properties = new XDictionary<string, object>();
+            Properties = new XDictionary<string, string>();
         }
     }
 

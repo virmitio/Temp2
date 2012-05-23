@@ -402,7 +402,7 @@ namespace AutoBuilder
 
                     for (int i = 0; i < count; i++)
                     {
-                        string username = json.commits[i].author.username.Value;
+                        string username = (json.commits[i].author.username ?? json.commits[i].author.name).Value;
 
                         if (!username.Equals((string)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["username"]), StringComparison.CurrentCultureIgnoreCase))
                         {
@@ -420,7 +420,10 @@ namespace AutoBuilder
                         }
                         else
                         {
-                            if ((bool)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["NewFromHook"]))
+                            bool makeNew;
+                            if (!Boolean.TryParse(AutoBuild.MasterConfig.VersionControlList["git"].Properties["NewFromHook"], out makeNew))
+                                return;
+                            if (makeNew)
                             {
                                 /////Build new ProjectInfo info from commit message.
                                 ProjectData project = new ProjectData();
@@ -454,18 +457,22 @@ namespace AutoBuilder
 
                                 if (!(AutoBuild.MasterConfig.DefaultCommands.IsNullOrEmpty()))
                                 {
+                                    List<string> strings;
                                     //prebuild
-                                    foreach (string s in AutoBuild.MasterConfig.DefaultCommands["prebuild"])
+                                    strings = AutoBuild.MasterConfig.DefaultCommands["prebuild"] ?? new List<string>();
+                                    foreach (string s in strings)
                                     {
                                         project.PreBuild.Add(s);
                                     }
                                     //build
-                                    foreach (string s in AutoBuild.MasterConfig.DefaultCommands["build"])
+                                    strings = AutoBuild.MasterConfig.DefaultCommands["build"] ?? new List<string>();
+                                    foreach (string s in strings)
                                     {
                                         project.Build.Add(s);
                                     }
                                     //postbuild
-                                    foreach (string s in AutoBuild.MasterConfig.DefaultCommands["postbuild"])
+                                    strings = AutoBuild.MasterConfig.DefaultCommands["postbuild"] ?? new List<string>();
+                                    foreach (string s in strings)
                                     {
                                         project.PostBuild.Add(s);
                                     }

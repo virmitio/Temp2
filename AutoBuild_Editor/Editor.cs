@@ -69,7 +69,7 @@ namespace AutoBuilder
                     IList list = ((IEnumerable)data).EnumToArray();
                     for (int i = 0; i < list.Count; i++)
                     {
-                        current.AddChild(i.ToString(), list[i]);
+                        current.AddChild(list[i].GetType().Name, list[i]);
                     }
                 }
                 return;
@@ -147,6 +147,50 @@ namespace AutoBuilder
                     FillData(subNode);
                 }
             }
+        }
+
+        private void RetraceTree(TreeNode root)
+        {
+
+            if (root.Tag is string || root.Tag is int || root.Tag is bool)
+                return;
+
+            if (root.Tag is IEnumerable)
+            {
+                if (root.Tag is IDictionary)
+                {
+                    ((IDictionary)root.Tag).Clear();
+                    foreach (TreeNode n in root.Nodes)
+                        ((IDictionary)root.Tag)[n.Text] = n.Tag;
+                }
+                else
+                {
+                    ((IList)root.Tag).Clear();
+                    foreach (TreeNode n in root.Nodes)
+                        ((IList)root.Tag).Add(n.Tag);
+                }
+                return;
+            }
+
+
+            foreach (TreeNode node in root.Nodes)
+            {
+                var field = root.Tag.GetType().GetField(node.Text, DefaultBF);
+                var property = root.Tag.GetType().GetProperty(node.Text, DefaultBF);
+                if (field != null || property != null)
+                    RetraceTree(node);
+
+                if (field != null)
+                {
+                    field.SetValue(root.Tag, node.Tag);
+                }
+                else if (property != null)
+                {
+                    property.SetValue(root.Tag, node.Tag, null);
+                }
+            }
+
+
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
@@ -234,7 +278,9 @@ namespace AutoBuilder
             {
                 TreeNode root = ConfigTree.SelectedNode.Root();
                 string filename = (string)(root.Tag);
+                RetraceTree(root.FirstNode);
                 var data = (root.FirstNode.Tag);
+                
                 File.WriteAllText(filename, data.Serialize(AutoBuild.SerialSeperator, true));
             }
             catch (Exception E)
