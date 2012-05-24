@@ -203,7 +203,7 @@ namespace AutoBuilder
             if (MasterConfig.UseGithubListener)
             {
                 ListenAgent agent = new ListenAgent();
-                agent.Logger = (message => WriteEvent(message, EventLogEntryType.Warning, 0, 1));
+                agent.Logger = ((message, type) => WriteEvent(message, type, 0, 1));
                 if (agent.Start())
                 {
                     Daemons.Add(agent);
@@ -330,6 +330,8 @@ namespace AutoBuilder
             {
                 if (projectName == null)
                     throw new ArgumentException("ProjectName cannot be null.");
+
+                Projects[projectName] = new ProjectData();
                 if (!Projects.ContainsKey(projectName))
                     throw new ArgumentException("Project not found: " + projectName);
 
@@ -337,7 +339,10 @@ namespace AutoBuilder
                 UrlEncodedMessage UEM = new UrlEncodedMessage(File.ReadAllText(file), AutoBuild.SerialSeperator, true);
                 UEM.DeserializeTo(Projects[projectName]);
                 Projects[projectName].SetName(projectName);
-                Projects[projectName].LoadHistory(Path.Combine(MasterConfig.ProjectRoot, projectName, "Log.log"));
+                string logPath = Path.Combine(MasterConfig.ProjectRoot, projectName, "Log.log");
+                if (!File.Exists(logPath))
+                    logPath = String.Empty;
+                Projects[projectName].LoadHistory(logPath);
                 Projects[projectName].Changed2 += ProjectChanged;
                 return true;
             }
@@ -493,7 +498,7 @@ namespace AutoBuilder
         {
             if (WaitQueue.Count > 0)
             {
-                while (CurrentJobs < MasterConfig.MaxJobs)
+                while (CurrentJobs < MasterConfig.MaxJobs && WaitQueue.Count > 0)
                 {
                     CurrentJobs += 1;
                     string proj = WaitQueue.Dequeue();

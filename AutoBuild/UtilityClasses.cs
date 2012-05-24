@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
 using CoApp.Toolkit.Collections;
+using System.Collections.ObjectModel;
 
 
 namespace AutoBuilder
@@ -140,7 +141,7 @@ namespace AutoBuilder
     public class BuildHistory
     {
         [XmlArray(IsNullable = false)] 
-        public List<BuildStatus> Builds;
+        public ObservableCollection<BuildStatus> Builds;
 
         /// <summary>
         /// This will populate the Builds list from an XML input stream.
@@ -148,6 +149,7 @@ namespace AutoBuilder
         /// </summary>
         /// <param name="XmlStream">Stream containing XML data</param>
         /// <returns>True if Builds was altered.</returns>
+        /*
         public bool ImportHistory(Stream XmlStream)
         {
             if (!(Builds == null || Builds.Count <= 0))
@@ -165,6 +167,7 @@ namespace AutoBuilder
                 return false;
             }
         }
+        */
 
         /// <summary>
         /// This will populate the Builds list from an XML input stream.
@@ -174,6 +177,7 @@ namespace AutoBuilder
         /// <returns>True if Builds was altered.</returns>
         public bool ImportHistory(string XmlString)
         {
+            /*
             if (!(Builds == null || Builds.Count <= 0))
                 return false;
             try
@@ -188,6 +192,8 @@ namespace AutoBuilder
             {
                 return false;
             }
+            */
+            return false;
         }
 
         public string ExportXml()
@@ -211,16 +217,19 @@ namespace AutoBuilder
 
         public BuildHistory()
         {
-            Builds = new List<BuildStatus>();
+            Builds = new ObservableCollection<BuildStatus>();
         }
         public BuildHistory(string Xml)
         {
-            ImportHistory(Xml);
+            //ImportHistory(Xml);
         }
+        
+        /*
         public BuildHistory(Stream Xml)
         {
             ImportHistory(Xml);
         }
+        */
     }
 
     public static class XDictionaryExtensions

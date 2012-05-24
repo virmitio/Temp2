@@ -11,6 +11,7 @@ using CoApp.Toolkit.Pipes;
 using CoApp.Toolkit.Tasks;
 using CoApp.Toolkit.Utility;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace AutoBuilder
 {
@@ -37,7 +38,7 @@ namespace AutoBuilder
         }
     }
 
-    public delegate void Logger(string message);
+    public delegate void Logger(string message, EventLogEntryType type);
 
     public class Listener
     {
@@ -48,10 +49,10 @@ namespace AutoBuilder
         private Task<HttpListenerContext> _current = null;
 
         public static Logger Logger;
-        private static void WriteLog(string message)
+        private static void WriteLog(string message, EventLogEntryType type = EventLogEntryType.Information)
         {
             if (Logger != null)
-                Logger(message);
+                Logger(message, type);
         }
 
         public Listener()
@@ -343,7 +344,7 @@ namespace AutoBuilder
             if (e is AggregateException)
                 e = (e as AggregateException).Flatten().InnerExceptions[0];
 
-            WriteLog("{0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace));
+            WriteLog("{0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace), EventLogEntryType.Error);
         }
     }
 
@@ -362,10 +363,10 @@ namespace AutoBuilder
     public class PostHandler : RequestHandler
     {
         public static Logger Logger;
-        private static void WriteLog(string message)
+        private static void WriteLog(string message, EventLogEntryType type = EventLogEntryType.Information)
         {
             if (Logger != null)
-                Logger(message);
+                Logger(message, type);
         }
 
         public PostHandler()
@@ -493,7 +494,7 @@ namespace AutoBuilder
                 }
                 catch (Exception e)
                 {
-                    WriteLog("Error processing payload: {0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace));
+                    WriteLog("Error processing payload: {0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace), EventLogEntryType.Error);
                     Listener.HandleException(e);
                     response.StatusCode = 500;
                     response.Close();
@@ -505,7 +506,7 @@ namespace AutoBuilder
                 if (result.IsFaulted)
                 {
                     var e = antecedent.Exception.InnerException;
-                    WriteLog("Error handling commit message: {0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace));
+                    WriteLog("Error handling commit message: {0} -- {1}\r\n{2}".format(e.GetType(), e.Message, e.StackTrace), EventLogEntryType.Error);
                     Listener.HandleException(e);
                     response.StatusCode = 500;
                     response.Close();

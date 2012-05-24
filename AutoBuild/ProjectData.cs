@@ -6,6 +6,7 @@ using System.Xml.Serialization;
 using System.Collections.Generic;
 using CoApp.Toolkit.Collections;
 using CoApp.Toolkit.Extensions;
+using CoApp.Toolkit.Pipes;
 
 namespace AutoBuilder
 {
@@ -198,11 +199,37 @@ namespace AutoBuilder
         /// <returns>True if the History object has changed.</returns>
         public bool LoadHistory(string XmlFile)
         {
+            /*
             if (File.Exists(XmlFile))
                 return History.ImportHistory(new FileStream(XmlFile, FileMode.Open, FileAccess.Read));
             
             //This means we don't see a file by that name.  Maybe it's just an Xml string?
             return History.ImportHistory(XmlFile);
+             */
+            if (XmlFile == null || XmlFile.Equals(String.Empty))
+            {
+                if (History == null)
+                {
+                    History = new BuildHistory();
+                    History.Builds.CollectionChanged += CollectionChanged;
+                    return true;
+                }
+                return false;
+            }
+            
+            if (File.Exists(XmlFile))
+            {
+                UrlEncodedMessage uem = new UrlEncodedMessage(File.ReadAllText(XmlFile), Environment.NewLine, true);
+                History = uem.DeserializeTo<BuildHistory>() ?? new BuildHistory();
+                History.Builds.CollectionChanged += CollectionChanged;
+                return true;
+            }
+
+            History = new BuildHistory();
+            UrlEncodedMessage UEM = new UrlEncodedMessage(XmlFile, Environment.NewLine, true);
+            UEM.DeserializeTo(History);
+            History.Builds.CollectionChanged += CollectionChanged;
+            return true;
         }
 
 
@@ -216,6 +243,7 @@ namespace AutoBuilder
             if (History != null)
                 return false;
             History = history;
+            History.Builds.CollectionChanged += CollectionChanged;
             return true;
         }
 
@@ -239,6 +267,7 @@ namespace AutoBuilder
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild = new ObservableCollection<string>();
             PostBuild.CollectionChanged += CollectionChanged;
+            LoadHistory(String.Empty);
         }
 
         //A copy constructor, because I'm always annoyed when I can't find one.
@@ -261,6 +290,7 @@ namespace AutoBuilder
             Build.CollectionChanged += CollectionChanged;
             PreBuild.CollectionChanged += CollectionChanged;
             PostBuild.CollectionChanged += CollectionChanged;
+            LoadHistory(String.Empty);
         }
 
 /*
