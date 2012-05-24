@@ -219,14 +219,14 @@ namespace AutoBuilder
             
             if (File.Exists(XmlFile))
             {
-                UrlEncodedMessage uem = new UrlEncodedMessage(File.ReadAllText(XmlFile), Environment.NewLine, true);
+                UrlEncodedMessage uem = new UrlEncodedMessage(File.ReadAllText(XmlFile), AutoBuild.SerialSeperator, true);
                 History = uem.DeserializeTo<BuildHistory>() ?? new BuildHistory();
                 History.Builds.CollectionChanged += CollectionChanged;
                 return true;
             }
 
             History = new BuildHistory();
-            UrlEncodedMessage UEM = new UrlEncodedMessage(XmlFile, Environment.NewLine, true);
+            UrlEncodedMessage UEM = new UrlEncodedMessage(XmlFile, AutoBuild.SerialSeperator, true);
             UEM.DeserializeTo(History);
             History.Builds.CollectionChanged += CollectionChanged;
             return true;

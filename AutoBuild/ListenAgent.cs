@@ -403,7 +403,7 @@ namespace AutoBuilder
 
                     for (int i = 0; i < count; i++)
                     {
-                        string username = (json.commits[i].author.username ?? json.commits[i].author.name).Value;
+                        string username = (json.commits[i].author.username ?? json.commits[i].author.name ?? new {Value = String.Empty}).Value;
 
                         if (!username.Equals((string)(AutoBuild.MasterConfig.VersionControlList["git"].Properties["username"]), StringComparison.CurrentCultureIgnoreCase))
                         {
