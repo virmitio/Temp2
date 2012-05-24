@@ -127,7 +127,7 @@ namespace AutoBuilder
         
         public void Append(string data)
         {
-            LogData += Environment.NewLine + data;
+            LogData = LogData == null ? data : LogData + Environment.NewLine + data;
         }
 
         public BuildStatus()

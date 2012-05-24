@@ -570,7 +570,7 @@ namespace AutoBuilder
         public override bool Start()
         {
             if (!initDone)
-                Init();
+                initDone = Init();
 
             try
             {

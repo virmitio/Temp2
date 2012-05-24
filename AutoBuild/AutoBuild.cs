@@ -530,9 +530,6 @@ namespace AutoBuilder
             ProjectData proj = Projects[projectName];
             ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
             // Redirect stdout and stderr to the same output
-            StringBuilder std = new StringBuilder();
-            _cmdexe.ResetStdOut(std);
-            _cmdexe.ResetStdErr(std);
 
             Func<string> getToolSwitches = () =>
             {
@@ -552,9 +549,15 @@ namespace AutoBuilder
             Macros["vcstool"] = MasterConfig.VersionControlList[proj.VersionControl].Tool.Path;
             Macros["vcsswitches"] = getToolSwitches();
             Macros["keepclean"] = proj.KeepCleanRepo.ToString();
+            string rootPath = MasterConfig.ProjectRoot + @"\" + projectName;
+            Macros["projectroot"] = rootPath;
 
             foreach (string command in commands)
             {
+                StringBuilder std = new StringBuilder();
+                _cmdexe.ResetStdOut(std);
+                _cmdexe.ResetStdErr(std);
+
                 status.Append("AutoBuild - Begin command:  " + command);
                 Macros["currentcommand"] = command;
 
@@ -573,9 +576,6 @@ namespace AutoBuilder
                     status.Append("AutoBuild Error:  Unable to locate command script: " + command);
                     return (int)Errors.NoCommand;
                 }
-
-                string rootPath = MasterConfig.ProjectRoot + @"\" + projectName;
-                Macros["projectroot"] = rootPath;
 
                 int retVal = tmp.Run(_cmdexe, rootPath, projectName, new XDictionary<string, string>(Macros));
                 status.Append(_cmdexe.StandardOut);
@@ -597,7 +597,7 @@ namespace AutoBuilder
             {
                 XDictionary<string, string> macros = new XDictionary<string, string>();
                 macros["checkout"] = checkoutRef;
-                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].PreCmd, null, macros);
+                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].PreCmd, status, macros);
             }
             // else
             return doActions(projectName, Projects[projectName].PreBuild, status);
