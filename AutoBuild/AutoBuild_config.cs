@@ -14,6 +14,7 @@ namespace AutoBuilder
     public class AutoBuild_config
     {
         private const string DEFAULTROOT = @"C:\AutoBuild\Packages";
+        private const string DEFAULTOUTPUT = @"C:\output";
 
 #region XML Serialization methods
         /*
@@ -88,6 +89,19 @@ namespace AutoBuilder
         private string _ProjectRoot;
 
         [NotPersistable]
+        public string OutputStore
+        {
+            get { return _OutputStore; }
+            set
+            {
+                ChangedEvent();
+                _OutputStore = value;
+            }
+        }
+        [Persistable]
+        private string _OutputStore;
+
+        [NotPersistable]
         public int MaxJobs
         {
             get { return _MaxJobs; }
@@ -141,6 +155,8 @@ namespace AutoBuilder
             _DefaultCleanRepo = true;
             _UseGithubListener = true;
             _ProjectRoot = DEFAULTROOT;
+            _OutputStore = DEFAULTOUTPUT;
+
             _MaxJobs = 4;
             VersionControlList = new XDictionary<string, VersionControl>();
             DefaultCommands = new XDictionary<string, List<string>>();
@@ -157,6 +173,8 @@ namespace AutoBuilder
             _DefaultCleanRepo = source.DefaultCleanRepo;
             _UseGithubListener = source.UseGithubListener;
             _ProjectRoot = source.ProjectRoot;
+            _OutputStore = source.OutputStore;
+
             _MaxJobs = source.MaxJobs;
             VersionControlList = new XDictionary<string, VersionControl>(source.VersionControlList);
             DefaultCommands = new XDictionary<string, List<string>>(source.DefaultCommands);

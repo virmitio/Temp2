@@ -39,6 +39,7 @@ namespace AutoBuilder
     public class AutoBuild : ServiceBase
     {
         public static readonly string SerialSeperator = "\n";
+        public static readonly string DateTimeDirFormat = "yyyy-mm-dd_HH-mm-ss";
 
         private static AutoBuild _instance;
         public static AutoBuild_config MasterConfig { get; private set; }
@@ -451,6 +452,8 @@ namespace AutoBuilder
                 foreach (var checkout in Projects[projectName].BuildCheckouts.Keys)
                 {
                     BuildStatus build = new BuildStatus();
+                    Directory.CreateDirectory(Path.Combine(MasterConfig.ProjectRoot, projectName, "Archive",
+                                                           build.TimeStamp.ToString(DateTimeDirFormat)));
                     build.Append("Log for project [" + projectName + "] on reference [" + checkout + "]");
                     if (PreBuildActions(projectName, build, checkout) == 0)
                         if (BuildActions(projectName, build, checkout) == 0)
@@ -468,6 +471,8 @@ namespace AutoBuilder
             else
             {
                 BuildStatus build = new BuildStatus();
+                Directory.CreateDirectory(Path.Combine(MasterConfig.ProjectRoot, projectName, "Archive",
+                                                       build.TimeStamp.ToString(DateTimeDirFormat)));
                 if (PreBuildActions(projectName, build) == 0)
                     if (BuildActions(projectName, build) == 0)
                         if (PostBuildActions(projectName, build) == 0)
@@ -527,6 +532,11 @@ namespace AutoBuilder
             Macros = Macros ?? new XDictionary<string, string>();
 
             status = status ?? new BuildStatus();
+            string ArchiveLoc = Path.Combine(MasterConfig.ProjectRoot, projectName, "Archive",
+                                             status.TimeStamp.ToString(DateTimeDirFormat));
+
+            if (!Directory.Exists(ArchiveLoc))
+                Directory.CreateDirectory(ArchiveLoc);
             ProjectData proj = Projects[projectName];
             ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
             // Redirect stdout and stderr to the same output
@@ -551,6 +561,10 @@ namespace AutoBuilder
             Macros["keepclean"] = proj.KeepCleanRepo.ToString();
             string rootPath = MasterConfig.ProjectRoot + @"\" + projectName;
             Macros["projectroot"] = rootPath;
+            Macros["repo_url"] = proj.RepoURL;
+            Macros["build_datetime"] = status.TimeStamp.ToString(DateTimeDirFormat);
+            Macros["archive"] = ArchiveLoc;
+            Macros["output_store"] = MasterConfig.OutputStore;
 
             foreach (string command in commands)
             {
