@@ -212,6 +212,7 @@ namespace AutoBuilder
         public void Append(BuildStatus status)
         {
             status.Lock();
+            Builds = Builds ?? new ObservableCollection<BuildStatus>();
             Builds.Add(status);
         }
 
@@ -219,12 +220,14 @@ namespace AutoBuilder
         {
             Builds = new ObservableCollection<BuildStatus>();
         }
+
+        /*
         public BuildHistory(string Xml)
         {
             //ImportHistory(Xml);
         }
         
-        /*
+        
         public BuildHistory(Stream Xml)
         {
             ImportHistory(Xml);

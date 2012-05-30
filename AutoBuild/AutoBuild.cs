@@ -39,7 +39,7 @@ namespace AutoBuilder
     public class AutoBuild : ServiceBase
     {
         public static readonly string SerialSeperator = "\n";
-        public static readonly string DateTimeDirFormat = "yyyy-mm-dd_HH-mm-ss";
+        public static readonly string DateTimeDirFormat = "yyyy-MM-dd_HH-mm-ss";
 
         private static AutoBuild _instance;
         public static AutoBuild_config MasterConfig { get; private set; }
@@ -484,6 +484,9 @@ namespace AutoBuilder
                 else
                     build.ChangeResult("Error");
                 Projects[projectName].GetHistory().Append(build);
+                string BuildLog = Path.Combine(MasterConfig.ProjectRoot, projectName, "Archive",
+                                 build.TimeStamp.ToString(DateTimeDirFormat), "run.log");
+                File.WriteAllText(BuildLog, build.LogData);
             }
         }
 
