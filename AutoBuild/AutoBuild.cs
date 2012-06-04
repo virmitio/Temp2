@@ -677,7 +677,7 @@ namespace AutoBuilder
             {
                 XDictionary<string, string> macros = new XDictionary<string, string>();
                 macros["checkout"] = checkoutRef;
-                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].ArchiveCmd, null, macros);
+                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].ArchiveCmd, status, macros);
             }
             // else
             return doActions(projectName, Projects[projectName].PostBuild, status);
@@ -695,7 +695,7 @@ namespace AutoBuilder
             {
                 XDictionary<string, string> macros = new XDictionary<string, string>();
                 macros["checkout"] = checkoutRef;
-                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].BuildCmd, null, macros);
+                return doActions(projectName, Projects[projectName].BuildCheckouts[checkoutRef].BuildCmd, status, macros);
             }
             // else
             return doActions(projectName, Projects[projectName].Build, status);
