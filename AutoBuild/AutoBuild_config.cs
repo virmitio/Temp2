@@ -113,7 +113,20 @@ namespace AutoBuilder
         }
         [Persistable]
         private int _MaxJobs;
-        
+
+        [NotPersistable]
+        public int PreTriggerWait
+        {
+            get { return _PreTriggerWait; }
+            set
+            {
+                ChangedEvent();
+                _PreTriggerWait = value;
+            }
+        }
+        [Persistable]
+        private int _PreTriggerWait;
+
 //        [XmlArray(IsNullable = false)]
         [Persistable]
         public XDictionary<string, VersionControl> VersionControlList { get; private set; }
@@ -126,6 +139,8 @@ namespace AutoBuilder
         [Persistable]
         public XDictionary<string, CommandScript> Commands { get; private set; }
 
+        [Persistable]
+        public ObservableCollection<string> DefaultRefs { get; private set; }
 
 
         private void ChangedEvent()
@@ -147,6 +162,10 @@ namespace AutoBuilder
         {
             ChangedEvent();
         }
+        private void CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            ChangedEvent();
+        }
 
 
         //Default constructor.  Always good to have one of these.
@@ -156,15 +175,18 @@ namespace AutoBuilder
             _UseGithubListener = true;
             _ProjectRoot = DEFAULTROOT;
             _OutputStore = DEFAULTOUTPUT;
+            _PreTriggerWait = 60 * 1000;
 
             _MaxJobs = 4;
             VersionControlList = new XDictionary<string, VersionControl>();
             DefaultCommands = new XDictionary<string, List<string>>();
             Commands = new XDictionary<string, CommandScript>();
+            DefaultRefs = new ObservableCollection<string>();
 
             VersionControlList.Changed += VCSChanged;
             DefaultCommands.Changed += DefaultCommandsChanged;
             Commands.Changed += CommandsChanged;
+            DefaultRefs.CollectionChanged += CollectionChanged;
         }
 
         //A copy constructor, because I'm always annoyed when I can't find one.
@@ -174,15 +196,18 @@ namespace AutoBuilder
             _UseGithubListener = source.UseGithubListener;
             _ProjectRoot = source.ProjectRoot;
             _OutputStore = source.OutputStore;
+            _PreTriggerWait = source.PreTriggerWait;
 
             _MaxJobs = source.MaxJobs;
             VersionControlList = new XDictionary<string, VersionControl>(source.VersionControlList);
             DefaultCommands = new XDictionary<string, List<string>>(source.DefaultCommands);
             Commands = new XDictionary<string, CommandScript>(source.Commands);
+            DefaultRefs = new ObservableCollection<string>(source.DefaultRefs);
 
             VersionControlList.Changed += VCSChanged;
             DefaultCommands.Changed += DefaultCommandsChanged;
             Commands.Changed += CommandsChanged;
+            DefaultRefs.CollectionChanged += CollectionChanged;
         }
 
 /*
@@ -194,6 +219,7 @@ namespace AutoBuilder
             Commands.Changed += CommandsChanged;
         }
 */
+
 
     }
 }

@@ -23,6 +23,7 @@ using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Threading;
 using CoApp.Toolkit.Collections;
 using CoApp.Toolkit.Pipes;
 using Microsoft.Win32;
@@ -44,10 +45,18 @@ namespace AutoBuilder
         private static AutoBuild _instance;
         public static AutoBuild_config MasterConfig { get; private set; }
         public static XDictionary<string, ProjectData> Projects { get; private set; }
-        private static Queue<string> WaitQueue;
+        private static XDictionary<string, Timer> Waiting;
+        private static Queue<string> RunQueue;
         private static List<string> Running;
         private static int CurrentJobs;
         public static List<Daemon> Daemons;
+        public static Action<string> VerboseOut;
+
+        public static void WriteVerbose(string data)
+        {
+            if (VerboseOut != null)
+                VerboseOut(data);
+        }
 
         public static AutoBuild Instance
         {
@@ -61,7 +70,8 @@ namespace AutoBuilder
         public AutoBuild()
         {
             Daemons = new List<Daemon>();
-            WaitQueue = new Queue<string>();
+            Waiting = new XDictionary<string, Timer>();
+            RunQueue = new Queue<string>();
             Running = new List<string>();
             Projects = new XDictionary<string, ProjectData>();
             MasterConfig = new AutoBuild_config();
@@ -78,7 +88,8 @@ namespace AutoBuilder
 
         static void Main()
         {
-            AutoBuild Manager = AutoBuild.Instance;
+            VerboseOut = s => Console.WriteLine(s);
+            AutoBuild Manager = Instance;
             Manager.OnStart(new string[0]);
             ConsoleKeyInfo c = new ConsoleKeyInfo(' ', ConsoleKey.Spacebar, false, false, false);
             while (!(c.Key.Equals(ConsoleKey.Escape)))
@@ -272,9 +283,9 @@ namespace AutoBuilder
             if (path == null)
                 return;
             StringBuilder SB = new StringBuilder();
-            while (WaitQueue.Count > 0)
+            while (RunQueue.Count > 0)
             {
-                SB.AppendLine(WaitQueue.Dequeue());
+                SB.AppendLine(RunQueue.Dequeue());
             }
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
@@ -446,7 +457,7 @@ namespace AutoBuilder
 
         private static void StartBuild(string projectName)
         {
-
+            WriteVerbose("Starting project:  " + projectName);
             if (Projects[projectName].BuildCheckouts.Any())
             {
                 foreach (var checkout in Projects[projectName].BuildCheckouts.Keys)
@@ -466,6 +477,10 @@ namespace AutoBuilder
                     else
                         build.ChangeResult("Error");
                     Projects[projectName].GetHistory().Append(build);
+                    WriteVerbose("Project done: " + projectName + " \t Result: " + build.Result);
+                    string BuildLog = Path.Combine(MasterConfig.ProjectRoot, projectName, "Archive",
+                                     build.TimeStamp.ToString(DateTimeDirFormat), "run.log");
+                    File.WriteAllText(BuildLog, build.LogData);
                 }
             }
             else
@@ -484,10 +499,28 @@ namespace AutoBuilder
                 else
                     build.ChangeResult("Error");
                 Projects[projectName].GetHistory().Append(build);
+                WriteVerbose("Project done: " + projectName + " \t Result: " + build.Result);
                 string BuildLog = Path.Combine(MasterConfig.ProjectRoot, projectName, "Archive",
                                  build.TimeStamp.ToString(DateTimeDirFormat), "run.log");
                 File.WriteAllText(BuildLog, build.LogData);
             }
+        }
+
+        public static void StandBy(string projectName)
+        {
+            if (projectName == null)
+                throw new ArgumentException("ProjectName cannot be null.");
+            if (!Projects.ContainsKey(projectName))
+                throw new ArgumentException("Project not found: " + projectName);
+
+            Waiting[projectName] = Waiting[projectName] ?? new Timer(o =>
+                                                                         {
+                                                                             Waiting[projectName].Dispose();
+                                                                             Waiting.Remove(projectName);
+                                                                             Trigger(projectName);
+                                                                         });
+            Waiting[projectName].Change(0, MasterConfig.PreTriggerWait);
+
         }
 
         public static void Trigger(string projectName)
@@ -497,30 +530,33 @@ namespace AutoBuilder
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
-            if (!(WaitQueue.Contains(projectName) || Running.Contains(projectName)) || Projects[projectName].AllowConcurrentBuilds)
-                WaitQueue.Enqueue(projectName);
+            if (!(RunQueue.Contains(projectName) || Running.Contains(projectName)) || Projects[projectName].AllowConcurrentBuilds)
+                RunQueue.Enqueue(projectName);
             Task.Factory.StartNew(ProcessQueue);
         }
 
         public static void ProcessQueue()
         {
-            if (WaitQueue.Count > 0)
+            if (RunQueue.Count > 0)
             {
-                while (CurrentJobs < MasterConfig.MaxJobs && WaitQueue.Count > 0)
+                while (CurrentJobs < MasterConfig.MaxJobs && RunQueue.Count > 0)
                 {
                     CurrentJobs += 1;
-                    string proj = WaitQueue.Dequeue();
-                    Task.Factory.StartNew(() =>
+                    string proj = RunQueue.Dequeue();
+                    if (Waiting[proj] == null)
                     {
-                        Running.Add(proj);
-                        StartBuild(proj);
-                    }, TaskCreationOptions.AttachedToParent).ContinueWith(
-                                  antecedent =>
-                                  {
-                                      Running.Remove(proj);
-                                      CurrentJobs -= 1;
-                                      Task.Factory.StartNew(ProcessQueue);
-                                  });
+                        Task.Factory.StartNew(() =>
+                                                  {
+                                                      Running.Add(proj);
+                                                      StartBuild(proj);
+                                                  }, TaskCreationOptions.AttachedToParent).ContinueWith(
+                                                      antecedent =>
+                                                          {
+                                                              Running.Remove(proj);
+                                                              CurrentJobs -= 1;
+                                                              Task.Factory.StartNew(ProcessQueue);
+                                                          });
+                    }
                 }
             }
         }
@@ -610,6 +646,7 @@ namespace AutoBuilder
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
+            WriteVerbose("Start PreBuild: " + projectName);
             if (checkoutRef != null)
             {
                 XDictionary<string, string> macros = new XDictionary<string, string>();
@@ -627,6 +664,7 @@ namespace AutoBuilder
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
+            WriteVerbose("Start PostBuild: " + projectName);
             if (checkoutRef != null)
             {
                 XDictionary<string, string> macros = new XDictionary<string, string>();
@@ -644,6 +682,7 @@ namespace AutoBuilder
             if (!Projects.ContainsKey(projectName))
                 throw new ArgumentException("Project not found: " + projectName);
 
+            WriteVerbose("Start Build: " + projectName);
             if (checkoutRef != null)
             {
                 XDictionary<string, string> macros = new XDictionary<string, string>();

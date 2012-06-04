@@ -417,7 +417,7 @@ namespace AutoBuilder
                         {
                             ProjectData project = AutoBuild.Projects[repository];
                             if (project.WatchRefs.IsNullOrEmpty() || project.WatchRefs.Contains(reference))
-                                AutoBuild.Trigger(repository);
+                                AutoBuild.StandBy(repository);
                         }
                         else
                         {
@@ -482,11 +482,14 @@ namespace AutoBuilder
                                 //We're obviously adding a git repo for this project, so assign that for the project's version control
                                 project.VersionControl = "git";
 
+                                project.WatchRefs.AddRange(AutoBuild.MasterConfig.DefaultRefs);
+
                                 //Add the new project with the new ProjectInfo
                                 AutoBuild.Instance.AddProject(repository, project);
 
-                                //Trigger the project now that it has been added
-                                AutoBuild.Trigger(repository);
+                                //Start the wait period.
+                                if (project.WatchRefs.IsNullOrEmpty() || project.WatchRefs.Contains(reference))
+                                    AutoBuild.StandBy(repository);
                             }
                         }
                     }
