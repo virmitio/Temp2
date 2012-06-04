@@ -527,7 +527,7 @@ namespace AutoBuilder
                                                                              Waiting.Remove(projectName);
                                                                              Trigger(projectName);
                                                                          });
-            Waiting[projectName].Change(0, MasterConfig.PreTriggerWait);
+            Waiting[projectName].Change(MasterConfig.PreTriggerWait, Timeout.Infinite);
 
         }
 

@@ -526,8 +526,7 @@ namespace AutoBuilder
                                 AutoBuild.Instance.AddProject(repository, project);
 
                                 //Start the wait period.
-                                if (project.WatchRefs.IsNullOrEmpty() || project.WatchRefs.Contains(reference))
-                                    AutoBuild.StandBy(repository);
+                                AutoBuild.StandBy(repository);
                             }
                         }
                     }
