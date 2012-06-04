@@ -456,33 +456,71 @@ namespace AutoBuilder
                                 }
                                 // End repo url section
 
+                                project.WatchRefs.AddRange(AutoBuild.MasterConfig.DefaultRefs);
+
                                 if (!(AutoBuild.MasterConfig.DefaultCommands.IsNullOrEmpty()))
                                 {
-                                    List<string> strings;
-                                    //prebuild
-                                    strings = AutoBuild.MasterConfig.DefaultCommands["prebuild"] ?? new List<string>();
-                                    foreach (string s in strings)
+
+                                    if (project.WatchRefs.Count > 0)
                                     {
-                                        project.PreBuild.Add(s);
+                                        foreach (string watchRef in project.WatchRefs)
+                                        {
+                                            string branch = watchRef.Substring(11);  //length of @"refs/heads/"
+                                            project.BuildCheckouts[branch] = new ProjectData.CheckoutInfo();
+
+                                            List<string> strings;
+                                            //prebuild
+                                            strings = AutoBuild.MasterConfig.DefaultCommands["prebuild"] ??
+                                                      new List<string>();
+                                            foreach (string s in strings)
+                                            {
+                                                project.BuildCheckouts[branch].PreCmd.Add(s);
+                                            }
+                                            //build
+                                            project.BuildCheckouts[branch].BuildCmd.Add("Checkout"); // magic name
+                                            strings = AutoBuild.MasterConfig.DefaultCommands["build"] ?? new List<string>();
+                                            foreach (string s in strings)
+                                            {
+                                                project.BuildCheckouts[branch].BuildCmd.Add(s);
+                                            }
+                                            //postbuild
+                                            strings = AutoBuild.MasterConfig.DefaultCommands["postbuild"] ??
+                                                      new List<string>();
+                                            foreach (string s in strings)
+                                            {
+                                                project.BuildCheckouts[branch].ArchiveCmd.Add(s);
+                                            }
+                                        }
                                     }
-                                    //build
-                                    strings = AutoBuild.MasterConfig.DefaultCommands["build"] ?? new List<string>();
-                                    foreach (string s in strings)
+                                    else
                                     {
-                                        project.Build.Add(s);
-                                    }
-                                    //postbuild
-                                    strings = AutoBuild.MasterConfig.DefaultCommands["postbuild"] ?? new List<string>();
-                                    foreach (string s in strings)
-                                    {
-                                        project.PostBuild.Add(s);
+                                        List<string> strings;
+                                        //prebuild
+                                        strings = AutoBuild.MasterConfig.DefaultCommands["prebuild"] ??
+                                                  new List<string>();
+                                        foreach (string s in strings)
+                                        {
+                                            project.PreBuild.Add(s);
+                                        }
+                                        //build
+                                        strings = AutoBuild.MasterConfig.DefaultCommands["build"] ?? new List<string>();
+                                        foreach (string s in strings)
+                                        {
+                                            project.Build.Add(s);
+                                        }
+                                        //postbuild
+                                        strings = AutoBuild.MasterConfig.DefaultCommands["postbuild"] ??
+                                                  new List<string>();
+                                        foreach (string s in strings)
+                                        {
+                                            project.PostBuild.Add(s);
+                                        }
+
                                     }
                                 }
 
                                 //We're obviously adding a git repo for this project, so assign that for the project's version control
                                 project.VersionControl = "git";
-
-                                project.WatchRefs.AddRange(AutoBuild.MasterConfig.DefaultRefs);
 
                                 //Add the new project with the new ProjectInfo
                                 AutoBuild.Instance.AddProject(repository, project);

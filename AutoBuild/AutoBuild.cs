@@ -145,10 +145,13 @@ namespace AutoBuilder
 
             // Save all current configuration info.
             SaveConfig();
+
+            /*
             foreach (var proj in Projects.Keys)
             {
                 SaveProject(proj);
             }
+            */
 
             //Dump the current build queue to a pending list.
             SaveQueue();
@@ -262,7 +265,7 @@ namespace AutoBuilder
             {
                 try
                 {
-                    Trigger(s);
+                    StandBy(s);
                 }
                 catch (Exception e)
                 {
@@ -286,6 +289,11 @@ namespace AutoBuilder
             while (RunQueue.Count > 0)
             {
                 SB.AppendLine(RunQueue.Dequeue());
+            }
+            foreach (var pair in Waiting)
+            {
+                pair.Value.Dispose();
+                SB.AppendLine(pair.Key);
             }
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);

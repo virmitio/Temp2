@@ -6,6 +6,7 @@ using System.Text;
 using System.Xml.Serialization;
 using CoApp.Toolkit.Collections;
 using System.Collections.ObjectModel;
+using CoApp.Toolkit.Extensions;
 
 
 namespace AutoBuilder
@@ -75,18 +76,18 @@ namespace AutoBuilder
         public abstract void Init();
     }
 
-    [XmlRoot(ElementName = "BuildStatus", Namespace = "http://coapp.org/automation/build")]
     public class BuildStatus
     {
+        [Persistable]
         private bool Locked = true;
 
-        [XmlElement] 
+        [Persistable]
         public string Result;
 
-        [XmlElement] 
+        [Persistable] 
         public DateTime TimeStamp;
 
-        [XmlElement] 
+        [NotPersistable] 
         public string LogData;
 
         /// <summary>
