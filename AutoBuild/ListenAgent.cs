@@ -413,6 +413,8 @@ namespace AutoBuilder
 
                     if (validTrigger)
                     {
+                        AutoBuild.WriteVerbose("POST received: " + repository + " -- " + reference);
+
                         if (AutoBuild.Projects.ContainsKey(repository))
                         {
                             ProjectData project = AutoBuild.Projects[repository];
