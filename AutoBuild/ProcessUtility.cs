@@ -38,6 +38,8 @@ namespace AutoBuilder
             sErr = newErr ?? new StringBuilder();
         }
 
+        public bool ConsoleOut { get; set; }
+
         /// <summary>
         /// This process' exit code (or zero)
         /// </summary>
@@ -47,11 +49,15 @@ namespace AutoBuilder
         private void CurrentProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             sErr.AppendLine(e.Data);
+            if (ConsoleOut)
+                Console.Out.WriteLine(e.Data);
         }
 
         private void CurrentProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             sOut.AppendLine(e.Data);
+            if (ConsoleOut)
+                Console.Error.WriteLine(e.Data);
         }
 
         private void CurrentProcess_Exited(object sender, EventArgs e)
