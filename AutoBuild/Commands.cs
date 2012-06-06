@@ -82,7 +82,7 @@ namespace AutoBuilder
                                                                                 : string.Empty;
                                                                   input = parts[0];
                                                               }
-                                                              return (macros[input.ToLower()] ?? Default) ?? input;
+                                                              return (macros[input.ToLower()] ?? Default) ?? String.Empty;
                                                           }));
             
             return Out.ToString();

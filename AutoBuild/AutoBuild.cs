@@ -567,6 +567,7 @@ namespace AutoBuilder
                     }
                 }
             }
+            
         }
 
         private static int doActions(string projectName, IEnumerable<string> commands, BuildStatus status = null, XDictionary<string, string> Macros = null)
